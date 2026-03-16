@@ -107,8 +107,8 @@ export default function DashboardPage() {
                 <stat.icon size={24} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-                <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
+                <p className="text-sm font-medium text-gray-500 dark:text-slate-400">{stat.label}</p>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</h3>
               </div>
             </div>
           </Card>
@@ -119,8 +119,8 @@ export default function DashboardPage() {
         {/* Chart */}
         <Card className="lg:col-span-2 p-6">
           <div className="mb-6 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900">Cotações Enviadas (7 dias)</h3>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Cotações Enviadas (7 dias)</h3>
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
               <Clock size={16} />
               <span>Atualizado agora</span>
             </div>
@@ -157,26 +157,26 @@ export default function DashboardPage() {
 
         {/* Recent Activity */}
         <Card className="p-6">
-          <h3 className="mb-6 text-lg font-bold text-gray-900">Últimos Envios</h3>
+          <h3 className="mb-6 text-lg font-bold text-gray-900 dark:text-white">Últimos Envios</h3>
           <div className="space-y-6">
             {recentQuotations.length > 0 ? (
               recentQuotations.map((q) => (
                 <div key={q.id} className="flex items-start gap-4">
                   <div className={cn(
                     'mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-                    q.status === 'Respondido' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                    q.status === 'Respondido' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'
                   )}>
                     {q.status === 'Respondido' ? <CheckCircle2 size={16} /> : <MessageSquare size={16} />}
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <p className="truncate text-sm font-semibold text-gray-900">{q.toolName}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{q.toolName}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
                       {q.contacts.length} {q.contacts.length === 1 ? 'contato' : 'contatos'} • {format(new Date(q.createdAt), "dd 'de' MMM", { locale: ptBR })}
                     </p>
                   </div>
                   <span className={cn(
                     'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                    q.status === 'Respondido' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                    q.status === 'Respondido' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400'
                   )}>
                     {q.status}
                   </span>
@@ -184,8 +184,8 @@ export default function DashboardPage() {
               ))
             ) : (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <AlertCircle size={40} className="mb-4 text-gray-200" />
-                <p className="text-sm text-gray-500">Nenhuma cotação enviada ainda.</p>
+                <AlertCircle size={40} className="mb-4 text-gray-200 dark:text-slate-700" />
+                <p className="text-sm text-gray-500 dark:text-slate-400">Nenhuma cotação enviada ainda.</p>
               </div>
             )}
           </div>

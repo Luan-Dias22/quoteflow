@@ -226,11 +226,11 @@ export default function AutomationPage() {
           <React.Fragment key={s}>
             <div className={cn(
               'flex h-10 w-10 items-center justify-center rounded-full font-bold transition-all',
-              step >= s ? 'bg-[#0EA5E9] text-white shadow-lg shadow-blue-100' : 'bg-gray-200 text-gray-500'
+              step >= s ? 'bg-[#0EA5E9] text-white shadow-lg shadow-blue-100 dark:shadow-none' : 'bg-gray-200 dark:bg-slate-800 text-gray-500 dark:text-slate-500'
             )}>
               {step > s ? <CheckCircle2 size={20} /> : s}
             </div>
-            {s < 3 && <div className={cn('h-1 w-12 rounded-full', step > s ? 'bg-[#0EA5E9]' : 'bg-gray-200')} />}
+            {s < 3 && <div className={cn('h-1 w-12 rounded-full', step > s ? 'bg-[#0EA5E9]' : 'bg-gray-200 dark:bg-slate-800')} />}
           </React.Fragment>
         ))}
       </div>
@@ -238,13 +238,13 @@ export default function AutomationPage() {
       {step === 1 && (
         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">Selecione as Ferramentas</h2>
-            <p className="text-gray-500">Escolha quais ferramentas você deseja cotar agora.</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Selecione as Ferramentas</h2>
+            <p className="text-gray-500 dark:text-slate-400">Escolha quais ferramentas você deseja cotar agora.</p>
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
               <Input 
                 placeholder="Buscar por nome ou categoria..." 
                 className="pl-10"
@@ -253,9 +253,9 @@ export default function AutomationPage() {
               />
             </div>
             <div className="relative w-full sm:w-64">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
               <select 
-                className="flex h-10 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none appearance-none"
+                className="flex h-10 w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-10 pr-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none appearance-none transition-colors"
                 value={toolCategoryFilter}
                 onChange={(e) => setToolCategoryFilter(e.target.value)}
               >
@@ -264,7 +264,7 @@ export default function AutomationPage() {
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" size={16} />
             </div>
           </div>
 
@@ -276,14 +276,14 @@ export default function AutomationPage() {
                   key={tool.id} 
                   className={cn(
                     'p-4 transition-all border-2 flex flex-col gap-4',
-                    isSelected ? 'border-[#0EA5E9] bg-blue-50/30' : 'border-transparent hover:border-gray-200'
+                    isSelected ? 'border-[#0EA5E9] bg-blue-50/30 dark:bg-blue-900/10' : 'border-transparent hover:border-gray-200 dark:hover:border-slate-700'
                   )}
                 >
                   <div 
                     className="flex items-center gap-3 cursor-pointer"
                     onClick={() => handleToggleTool(tool.id!)}
                   >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-400 overflow-hidden">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 overflow-hidden">
                       {tool.photoURL ? (
                         <img src={tool.photoURL} alt={tool.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
@@ -291,25 +291,25 @@ export default function AutomationPage() {
                       )}
                     </div>
                     <div className="flex-1 overflow-hidden">
-                      <h4 className="font-bold text-gray-900 truncate">{tool.name}</h4>
-                      <p className="text-xs text-gray-500">{tool.category}</p>
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">{tool.name}</h4>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">{tool.category}</p>
                     </div>
                     <div className={cn(
                       'h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors',
-                      isSelected ? 'bg-[#0EA5E9] border-[#0EA5E9]' : 'border-gray-200'
+                      isSelected ? 'bg-[#0EA5E9] border-[#0EA5E9]' : 'border-gray-200 dark:border-slate-700'
                     )}>
                       {isSelected && <CheckCircle2 size={14} className="text-white" />}
                     </div>
                   </div>
 
                   {isSelected && (
-                    <div className="flex items-center gap-3 pt-3 border-t border-blue-100 animate-in fade-in slide-in-from-top-1">
+                    <div className="flex items-center gap-3 pt-3 border-t border-blue-100 dark:border-blue-900/30 animate-in fade-in slide-in-from-top-1">
                       <Label htmlFor={`qty-${tool.id}`} className="text-xs font-bold text-[#0EA5E9]">Qtd:</Label>
                       <Input 
                         id={`qty-${tool.id}`}
                         type="number"
                         min="1"
-                        className="h-8 w-20 text-center text-sm bg-white border-blue-200 focus:ring-[#0EA5E9]"
+                        className="h-8 w-20 text-center text-sm bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-900/50 focus:ring-[#0EA5E9]"
                         value={selectedTools[tool.id!]}
                         onChange={(e) => handleUpdateQuantity(tool.id!, parseInt(e.target.value) || 1)}
                         onClick={(e) => e.stopPropagation()}
@@ -320,10 +320,10 @@ export default function AutomationPage() {
               );
             })}
             {filteredTools.length === 0 && (
-              <div className="col-span-full py-20 text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100">
-                <AlertCircle size={48} className="mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium text-gray-900">Nenhuma ferramenta encontrada</p>
-                <p className="text-sm text-gray-500">Tente ajustar seus filtros de busca.</p>
+              <div className="col-span-full py-20 text-center bg-gray-50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
+                <AlertCircle size={48} className="mx-auto mb-4 text-gray-300 dark:text-slate-700" />
+                <p className="text-lg font-medium text-gray-900 dark:text-white">Nenhuma ferramenta encontrada</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">Tente ajustar seus filtros de busca.</p>
               </div>
             )}
           </div>
@@ -345,8 +345,8 @@ export default function AutomationPage() {
       {step === 2 && (
         <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">Configure o Envio</h2>
-            <p className="text-gray-500">Revise a mensagem e os contatos antes de enviar.</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Configure o Envio</h2>
+            <p className="text-gray-500 dark:text-slate-400">Revise a mensagem e os contatos antes de enviar.</p>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-2">
@@ -365,24 +365,24 @@ export default function AutomationPage() {
                         checked={groupTools}
                         onChange={(e) => setGroupTools(e.target.checked)}
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0EA5E9]"></div>
-                      <span className="ml-3 text-xs font-bold text-gray-600">Agrupar ferramentas</span>
+                      <div className="w-11 h-6 bg-gray-200 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0EA5E9]"></div>
+                      <span className="ml-3 text-xs font-bold text-gray-600 dark:text-slate-400">Agrupar ferramentas</span>
                     </label>
                   </div>
                 </div>
                 <textarea 
-                  className="w-full min-h-[150px] rounded-xl border border-gray-200 p-4 text-sm focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none"
+                  className="w-full min-h-[150px] rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none transition-colors"
                   value={messageTemplate}
                   onChange={(e) => setMessageTemplate(e.target.value)}
                 />
                 <div className="mt-4 flex flex-wrap gap-2">
                   {['{empresa}', '{nome_ferramenta}', '{descrição}', '{quantidade}', '{lista_ferramentas}'].map(tag => (
-                    <span key={tag} className="px-2 py-1 bg-gray-100 rounded text-[10px] font-mono text-gray-600">{tag}</span>
+                    <span key={tag} className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-[10px] font-mono text-gray-600 dark:text-slate-400">{tag}</span>
                   ))}
                 </div>
-                <div className="mt-4 p-3 bg-blue-50 rounded-xl flex gap-3">
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex gap-3">
                   <Info size={18} className="text-[#0EA5E9] shrink-0" />
-                  <p className="text-xs text-blue-700 leading-relaxed">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
                     As variáveis serão substituídas automaticamente para cada ferramenta selecionada.
                   </p>
                 </div>
@@ -405,30 +405,32 @@ export default function AutomationPage() {
                         key={contact}
                         className={cn(
                           "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer",
-                          isSelected ? "bg-emerald-50 border-emerald-100" : "bg-gray-50 border-gray-100 opacity-60"
+                          isSelected 
+                            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/30" 
+                            : "bg-gray-50 dark:bg-slate-800/50 border-gray-100 dark:border-slate-800 opacity-60"
                         )}
                         onClick={() => handleToggleContact(contact)}
                       >
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "h-5 w-5 rounded border flex items-center justify-center transition-colors",
-                            isSelected ? "bg-[#10B981] border-[#10B981]" : "bg-white border-gray-300"
+                            isSelected ? "bg-[#10B981] border-[#10B981]" : "bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700"
                           )}>
                             {isSelected && <CheckCircle2 size={12} className="text-white" />}
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-900">{supplier?.name || 'Fornecedor'}</span>
-                            <span className="text-[10px] text-gray-500">{contact}</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">{supplier?.name || 'Fornecedor'}</span>
+                            <span className="text-[10px] text-gray-500 dark:text-slate-400">{contact}</span>
                           </div>
                         </div>
-                        {isSelected && <span className="text-[10px] font-bold text-emerald-600 uppercase">Selecionado</span>}
+                        {isSelected && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">Selecionado</span>}
                       </div>
                     );
                   })}
                   {getToolContacts().length === 0 && (
                     <div className="text-center py-10">
-                      <AlertCircle size={32} className="mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm text-gray-500">Nenhum contato vinculado a estas ferramentas.</p>
+                      <AlertCircle size={32} className="mx-auto mb-2 text-gray-300 dark:text-slate-700" />
+                      <p className="text-sm text-gray-500 dark:text-slate-400">Nenhum contato vinculado a estas ferramentas.</p>
                     </div>
                   )}
                 </div>
@@ -441,7 +443,7 @@ export default function AutomationPage() {
             <Button 
               size="lg" 
               variant="secondary"
-              className="gap-2 h-14 px-10 text-lg shadow-xl shadow-emerald-100"
+              className="gap-2 h-14 px-10 text-lg shadow-xl shadow-emerald-100 dark:shadow-none"
               disabled={isSending || getToolContacts().length === 0}
               onClick={handleSend}
             >
@@ -454,11 +456,11 @@ export default function AutomationPage() {
 
       {step === 3 && (
         <div className="text-center py-20 animate-in zoom-in duration-500">
-          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 size={48} />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Cotações Iniciadas!</h2>
-          <p className="text-gray-600 max-w-md mx-auto mb-10">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Cotações Iniciadas!</h2>
+          <p className="text-gray-600 dark:text-slate-400 max-w-md mx-auto mb-10">
             As abas do WhatsApp foram abertas. O histórico de envios foi atualizado automaticamente.
           </p>
           <div className="flex justify-center gap-4">
