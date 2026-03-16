@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Informações da empresa e do usuário.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "companyName": { "type": "string" },
+        "cnpj": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] }
+      },
+      "required": ["uid", "companyName", "email"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Fornecedores de ferramentas.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "company": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "observations": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "whatsapp"]
+    },
+    "Tool": {
+      "title": "Tool",
+      "description": "Ferramentas cadastradas para cotação.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "referencePrice": { "type": "number" },
+        "photoURL": { "type": "string" },
+        "contacts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "category"]
+    },
+    "Quotation": {
+      "title": "Quotation",
+      "description": "Histórico de cotações enviadas.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "toolId": { "type": "string" },
+        "toolName": { "type": "string" },
+        "quantity": { "type": "number" },
+        "contacts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["Enviado", "Respondido", "Negociando"] },
+        "fileURL": { "type": "string" },
+        "fileName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "toolId", "toolName", "contacts", "message", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Perfis de usuário."
+    },
+    "/suppliers": {
+      "schema": "Supplier",
+      "description": "Coleção de fornecedores."
+    },
+    "/tools": {
+      "schema": "Tool",
+      "description": "Coleção de ferramentas."
+    },
+    "/quotations": {
+      "schema": "Quotation",
+      "description": "Histórico de cotações."
+    }
+  }
+}

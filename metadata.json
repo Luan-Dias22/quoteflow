@@ -1,0 +1,5 @@
+{
+  "name": "AutoCota",
+  "description": "Automação de cotações de ferramentas via WhatsApp para empresas.",
+  "requestFramePermissions": []
+}
