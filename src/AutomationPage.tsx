@@ -33,10 +33,16 @@ export default function AutomationPage() {
   const [toolSearchTerm, setToolSearchTerm] = useState('');
   const [toolCategoryFilter, setToolCategoryFilter] = useState('all');
   const [messageTemplate, setMessageTemplate] = useState(
-    "Olá! Sou da {empresa}. Gostaria de solicitar uma cotação para os seguintes itens:\n{lista_ferramentas}\nFico no aguardo do seu retorno. Obrigado!"
+    "Olá! Sou da {empresa}. Gostaria de solicitar uma cotação para os seguintes itens:\n{lista_itens}\nFico no aguardo do seu retorno. Obrigado!"
   );
   const [isSending, setIsSending] = useState(false);
   const [step, setStep] = useState(1);
+  const [isQuickQuote, setIsQuickQuote] = useState(false);
+  const [selectedQuickSupplierId, setSelectedQuickSupplierId] = useState('');
+
+  useEffect(() => {
+    setSelectedTools({});
+  }, [isQuickQuote, selectedQuickSupplierId]);
 
   useEffect(() => {
     if (!user) return;
@@ -97,19 +103,26 @@ export default function AutomationPage() {
       const list = toolOrTools
         .map(item => `- ${item.quantity}x ${item.tool.name} (${item.tool.description})`)
         .join('\n');
-      return message.replace('{lista_ferramentas}', list);
+      return message.replace('{lista_itens}', list);
     } else {
       return message
-        .replace('{nome_ferramenta}', toolOrTools.name)
+        .replace('{nome_item}', toolOrTools.name)
         .replace('{descrição}', toolOrTools.description)
         .replace('{quantidade}', (quantity || 1).toString())
-        .replace('{lista_ferramentas}', `${quantity}x ${toolOrTools.name}`);
+        .replace('{lista_itens}', `${quantity}x ${toolOrTools.name}`);
     }
   };
 
   const goToStep2 = () => {
-    const allContacts = getToolContacts();
-    setSelectedContacts(allContacts);
+    if (isQuickQuote) {
+      const supplier = suppliers.find(s => s.id === selectedQuickSupplierId);
+      if (supplier) {
+        setSelectedContacts([supplier.whatsapp]);
+      }
+    } else {
+      const allContacts = getToolContacts();
+      setSelectedContacts(allContacts);
+    }
     setStep(2);
   };
 
@@ -122,18 +135,29 @@ export default function AutomationPage() {
         // Group by contact
         const contactMap = new Map<string, { tool: Tool, quantity: number }[]>();
         
-        Object.entries(selectedTools).forEach(([toolId, quantity]) => {
-          const tool = tools.find(t => t.id === toolId);
-          if (tool) {
-            tool.contacts.forEach(contact => {
-              // Only include if contact is selected
-              if (selectedContacts.includes(contact)) {
-                const current = contactMap.get(contact) || [];
-                contactMap.set(contact, [...current, { tool, quantity }]);
-              }
-            });
-          }
-        });
+        if (isQuickQuote && selectedContacts.length > 0) {
+          const contact = selectedContacts[0];
+          const toolList = Object.entries(selectedTools)
+            .map(([toolId, quantity]) => {
+              const tool = tools.find(t => t.id === toolId);
+              return tool ? { tool, quantity } : null;
+            })
+            .filter((item): item is { tool: Tool, quantity: number } => item !== null);
+          contactMap.set(contact, toolList);
+        } else {
+          Object.entries(selectedTools).forEach(([toolId, quantity]) => {
+            const tool = tools.find(t => t.id === toolId);
+            if (tool) {
+              tool.contacts.forEach(contact => {
+                // Only include if contact is selected
+                if (selectedContacts.includes(contact)) {
+                  const current = contactMap.get(contact) || [];
+                  contactMap.set(contact, [...current, { tool, quantity }]);
+                }
+              });
+            }
+          });
+        }
 
         for (const [contact, toolList] of contactMap.entries()) {
           const message = generateMessage(toolList);
@@ -162,15 +186,15 @@ export default function AutomationPage() {
           window.open(url, '_blank');
         }
       } else {
-        // Individual messages (original logic)
-        for (const [toolId, quantity] of Object.entries(selectedTools)) {
-          const tool = tools.find(t => t.id === toolId);
-          if (!tool) continue;
+        // Individual messages
+        if (isQuickQuote && selectedContacts.length > 0) {
+          const contact = selectedContacts[0];
+          for (const [toolId, quantity] of Object.entries(selectedTools)) {
+            const tool = tools.find(t => t.id === toolId);
+            if (!tool) continue;
 
-          const message = generateMessage(tool, quantity);
-          const contactsToSend = tool.contacts.filter(c => selectedContacts.includes(c));
-
-          for (const contact of contactsToSend) {
+            const message = generateMessage(tool, quantity);
+            
             try {
               await addDoc(collection(db, 'quotations'), {
                 userId: user.uid,
@@ -190,6 +214,35 @@ export default function AutomationPage() {
             const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
             window.open(url, '_blank');
           }
+        } else {
+          for (const [toolId, quantity] of Object.entries(selectedTools)) {
+            const tool = tools.find(t => t.id === toolId);
+            if (!tool) continue;
+
+            const message = generateMessage(tool, quantity);
+            const contactsToSend = tool.contacts.filter(c => selectedContacts.includes(c));
+
+            for (const contact of contactsToSend) {
+              try {
+                await addDoc(collection(db, 'quotations'), {
+                  userId: user.uid,
+                  toolId,
+                  toolName: tool.name,
+                  quantity,
+                  contacts: [contact],
+                  message,
+                  status: 'Enviado',
+                  createdAt: new Date().toISOString()
+                });
+              } catch (error) {
+                handleFirestoreError(error, OperationType.CREATE, 'quotations');
+              }
+
+              const cleanPhone = contact.replace(/\D/g, '');
+              const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+              window.open(url, '_blank');
+            }
+          }
         }
       }
       
@@ -205,7 +258,16 @@ export default function AutomationPage() {
     const matchesSearch = tool.name.toLowerCase().includes(toolSearchTerm.toLowerCase()) || 
                          tool.category.toLowerCase().includes(toolSearchTerm.toLowerCase());
     const matchesCategory = toolCategoryFilter === 'all' || tool.category === toolCategoryFilter;
-    return matchesSearch && matchesCategory;
+    
+    let matchesSupplier = true;
+    if (isQuickQuote && selectedQuickSupplierId) {
+      const supplier = suppliers.find(s => s.id === selectedQuickSupplierId);
+      if (supplier) {
+        matchesSupplier = tool.contacts.includes(supplier.whatsapp);
+      }
+    }
+
+    return matchesSearch && matchesCategory && matchesSupplier;
   });
 
   const categories = Array.from(new Set(tools.map(t => t.category))).sort();
@@ -238,9 +300,56 @@ export default function AutomationPage() {
       {step === 1 && (
         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Selecione as Ferramentas</h2>
-            <p className="text-gray-500 dark:text-slate-400">Escolha quais ferramentas você deseja cotar agora.</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Selecione os Itens</h2>
+            <p className="text-gray-500 dark:text-slate-400">Escolha quais itens você deseja cotar agora.</p>
           </div>
+
+          <Card className="p-4 bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "p-2 rounded-lg",
+                  isQuickQuote ? "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400" : "bg-gray-100 dark:bg-slate-800 text-gray-500"
+                )}>
+                  <Send size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Cotação Rápida</h3>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">Enviar para um fornecedor específico</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={isQuickQuote}
+                    onChange={(e) => {
+                      setIsQuickQuote(e.target.checked);
+                      if (!e.target.checked) setSelectedQuickSupplierId('');
+                    }}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0EA5E9]"></div>
+                </label>
+              </div>
+            </div>
+
+            {isQuickQuote && (
+              <div className="mt-4 pt-4 border-t border-blue-100 dark:border-blue-900/20 animate-in fade-in slide-in-from-top-2 duration-200">
+                <Label className="mb-2 block">Selecione o Fornecedor</Label>
+                <select 
+                  className="w-full h-11 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none transition-colors"
+                  value={selectedQuickSupplierId}
+                  onChange={(e) => setSelectedQuickSupplierId(e.target.value)}
+                >
+                  <option value="" className="dark:bg-slate-800">Selecione um fornecedor...</option>
+                  {suppliers.map(s => (
+                    <option key={s.id} value={s.id} className="dark:bg-slate-800">{s.name} ({s.company})</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </Card>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
             <div className="relative flex-1">
@@ -259,9 +368,9 @@ export default function AutomationPage() {
                 value={toolCategoryFilter}
                 onChange={(e) => setToolCategoryFilter(e.target.value)}
               >
-                <option value="all">Todas Categorias</option>
+                <option value="all" className="dark:bg-slate-800">Todas Categorias</option>
                 {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat} className="dark:bg-slate-800">{cat}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" size={16} />
@@ -331,7 +440,7 @@ export default function AutomationPage() {
           <div className="flex justify-end pt-8">
             <Button 
               size="lg" 
-              disabled={Object.keys(selectedTools).length === 0}
+              disabled={Object.keys(selectedTools).length === 0 || (isQuickQuote && !selectedQuickSupplierId)}
               onClick={goToStep2}
               className="gap-2"
             >
@@ -366,7 +475,7 @@ export default function AutomationPage() {
                         onChange={(e) => setGroupTools(e.target.checked)}
                       />
                       <div className="w-11 h-6 bg-gray-200 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0EA5E9]"></div>
-                      <span className="ml-3 text-xs font-bold text-gray-600 dark:text-slate-400">Agrupar ferramentas</span>
+                      <span className="ml-3 text-xs font-bold text-gray-600 dark:text-slate-400">Agrupar itens</span>
                     </label>
                   </div>
                 </div>
@@ -376,7 +485,7 @@ export default function AutomationPage() {
                   onChange={(e) => setMessageTemplate(e.target.value)}
                 />
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {['{empresa}', '{nome_ferramenta}', '{descrição}', '{quantidade}', '{lista_ferramentas}'].map(tag => (
+                  {['{empresa}', '{nome_item}', '{descrição}', '{quantidade}', '{lista_itens}'].map(tag => (
                     <span key={tag} className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-[10px] font-mono text-gray-600 dark:text-slate-400">{tag}</span>
                   ))}
                 </div>
@@ -396,7 +505,7 @@ export default function AutomationPage() {
                   <h3 className="font-bold">Contatos Selecionados</h3>
                 </div>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                  {getToolContacts().map((contact) => {
+                  {(isQuickQuote ? selectedContacts : getToolContacts()).map((contact) => {
                     const supplier = suppliers.find(s => s.whatsapp === contact);
                     const isSelected = selectedContacts.includes(contact);
                     
@@ -407,9 +516,10 @@ export default function AutomationPage() {
                           "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer",
                           isSelected 
                             ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/30" 
-                            : "bg-gray-50 dark:bg-slate-800/50 border-gray-100 dark:border-slate-800 opacity-60"
+                            : "bg-gray-50 dark:bg-slate-800/50 border-gray-100 dark:border-slate-800 opacity-60",
+                          isQuickQuote && "cursor-default"
                         )}
-                        onClick={() => handleToggleContact(contact)}
+                        onClick={() => !isQuickQuote && handleToggleContact(contact)}
                       >
                         <div className="flex items-center gap-3">
                           <div className={cn(
@@ -430,7 +540,7 @@ export default function AutomationPage() {
                   {getToolContacts().length === 0 && (
                     <div className="text-center py-10">
                       <AlertCircle size={32} className="mx-auto mb-2 text-gray-300 dark:text-slate-700" />
-                      <p className="text-sm text-gray-500 dark:text-slate-400">Nenhum contato vinculado a estas ferramentas.</p>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">Nenhum contato vinculado a estes itens.</p>
                     </div>
                   )}
                 </div>

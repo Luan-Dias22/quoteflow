@@ -167,7 +167,7 @@ export default function SuppliersPage() {
       <Card className="overflow-hidden border-none shadow-md">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs font-bold uppercase tracking-wider text-gray-500">
+            <thead className="bg-gray-50 dark:bg-slate-800 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
               <tr>
                 <th className="px-6 py-4">Fornecedor</th>
                 <th className="px-6 py-4">WhatsApp</th>
@@ -176,7 +176,7 @@ export default function SuppliersPage() {
                 <th className="px-6 py-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
               {loading ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-10 text-center">
@@ -185,10 +185,10 @@ export default function SuppliersPage() {
                 </tr>
               ) : filteredSuppliers.length > 0 ? (
                 filteredSuppliers.map((s) => (
-                  <tr key={s.id} className="group hover:bg-gray-50/50 transition-colors">
+                  <tr key={s.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900">{s.name}</div>
-                      <div className="text-xs text-gray-500">{s.company}</div>
+                      <div className="font-semibold text-gray-900 dark:text-white">{s.name}</div>
+                      <div className="text-xs text-gray-500 dark:text-slate-500">{s.company}</div>
                     </td>
                     <td className="px-6 py-4">
                       <a 
@@ -201,7 +201,7 @@ export default function SuppliersPage() {
                         {s.whatsapp}
                       </a>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
+                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">
                       {s.email ? (
                         <div className="flex items-center gap-2">
                           <Mail size={14} className="text-gray-400" />
@@ -209,7 +209,7 @@ export default function SuppliersPage() {
                         </div>
                       ) : '-'}
                     </td>
-                    <td className="px-6 py-4 text-gray-600 max-w-[200px] truncate">
+                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400 max-w-[200px] truncate">
                       {s.address ? (
                         <div className="flex items-center gap-2">
                           <MapPin size={14} className="text-gray-400" />
@@ -327,7 +327,7 @@ export default function SuppliersPage() {
             <Label htmlFor="observations">Observações</Label>
             <textarea 
               id="observations"
-              className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-[80px] w-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9] disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.observations} 
               onChange={(e) => setFormData({ ...formData, observations: e.target.value })} 
               placeholder="Notas sobre o fornecedor..."

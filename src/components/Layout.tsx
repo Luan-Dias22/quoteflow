@@ -31,7 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Users, label: 'Fornecedores', path: '/suppliers' },
-    { icon: Wrench, label: 'Ferramentas', path: '/tools' },
+    { icon: MessageSquare, label: 'Produtos', path: '/tools' },
     { icon: MessageSquare, label: 'Automação', path: '/automation' },
     { icon: History, label: 'Histórico', path: '/history' },
     { icon: User, label: 'Perfil', path: '/profile' },
@@ -49,9 +49,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex h-20 items-center px-6">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0EA5E9] to-[#10B981] text-white shadow-lg shadow-blue-200 dark:shadow-none">
-              <Wrench size={22} />
+              <MessageSquare size={22} />
             </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">AutoCota</span>
+            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">QuoteFlow</span>
           </div>
         </div>
 
@@ -102,9 +102,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex h-20 items-center justify-between px-6">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#0EA5E9] to-[#10B981] text-white">
-              <Wrench size={18} />
+              <MessageSquare size={18} />
             </div>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">AutoCota</span>
+            <span className="text-lg font-bold text-gray-900 dark:text-white">QuoteFlow</span>
           </div>
           <button onClick={() => setIsMobileMenuOpen(false)}>
             <X size={24} className="text-gray-500 dark:text-slate-400" />

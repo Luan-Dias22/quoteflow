@@ -82,10 +82,10 @@ export default function DashboardPage() {
   }, [user]);
 
   const statCards = [
-    { label: 'Total Fornecedores', value: stats.suppliers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Total Ferramentas', value: stats.tools, icon: Wrench, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Cotações Enviadas', value: stats.quotations, icon: MessageSquare, color: 'text-purple-600', bg: 'bg-purple-50' },
-    { label: 'Taxa de Resposta', value: `${stats.responseRate}%`, icon: TrendingUp, color: 'text-orange-600', bg: 'bg-orange-50' },
+    { label: 'Total Fornecedores', value: stats.suppliers, icon: Users, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+    { label: 'Total Ferramentas', value: stats.tools, icon: Wrench, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+    { label: 'Cotações Enviadas', value: stats.quotations, icon: MessageSquare, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+    { label: 'Taxa de Resposta', value: `${stats.responseRate}%`, icon: TrendingUp, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20' },
   ];
 
   if (loading) {
@@ -128,7 +128,7 @@ export default function DashboardPage() {
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" className="dark:stroke-slate-800" />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
@@ -142,12 +142,19 @@ export default function DashboardPage() {
                   tick={{ fill: '#64748B', fontSize: 12 }}
                 />
                 <Tooltip 
-                  cursor={{ fill: '#F8FAFC' }}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  cursor={{ fill: '#F8FAFC', className: 'dark:fill-slate-800/50' }}
+                  contentStyle={{ 
+                    borderRadius: '12px', 
+                    border: 'none', 
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                  itemStyle={{ color: '#0EA5E9' }}
+                  labelStyle={{ color: '#64748B', fontWeight: 'bold' }}
                 />
                 <Bar dataKey="total" radius={[6, 6, 0, 0]}>
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#0EA5E9' : '#E2E8F0'} />
+                    <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#0EA5E9' : '#E2E8F0'} className={index === chartData.length - 1 ? '' : 'dark:fill-slate-800'} />
                   ))}
                 </Bar>
               </BarChart>

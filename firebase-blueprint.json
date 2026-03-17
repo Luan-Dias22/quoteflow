@@ -16,7 +16,7 @@
     },
     "Supplier": {
       "title": "Supplier",
-      "description": "Fornecedores de ferramentas.",
+      "description": "Fornecedores cadastrados.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
@@ -32,8 +32,8 @@
       "required": ["userId", "name", "whatsapp"]
     },
     "Tool": {
-      "title": "Tool",
-      "description": "Ferramentas cadastradas para cotação.",
+      "title": "Product",
+      "description": "Produtos cadastrados para cotação.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
@@ -83,7 +83,7 @@
     },
     "/tools": {
       "schema": "Tool",
-      "description": "Coleção de ferramentas."
+      "description": "Coleção de produtos."
     },
     "/quotations": {
       "schema": "Quotation",

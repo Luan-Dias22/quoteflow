@@ -1,5 +1,5 @@
 {
-  "name": "AutoCota",
-  "description": "Automação de cotações de ferramentas via WhatsApp para empresas.",
+  "name": "QuoteFlow",
+  "description": "Plataforma profissional para automação e gestão de cotações via WhatsApp.",
   "requestFramePermissions": []
 }

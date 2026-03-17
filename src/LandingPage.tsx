@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wrench, CheckCircle, Zap, Shield, ArrowRight } from 'lucide-react';
+import { MessageSquare, CheckCircle, Zap, Shield, ArrowRight, Users, History, LayoutDashboard } from 'lucide-react';
 import { Button } from './components/UI';
 
 export default function LandingPage() {
@@ -13,9 +13,9 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0EA5E9] to-[#10B981] text-white shadow-lg shadow-blue-200">
-              <Wrench size={22} />
+              <MessageSquare size={22} />
             </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900">AutoCota</span>
+            <span className="text-xl font-bold tracking-tight text-gray-900">QuoteFlow</span>
           </div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/login')}>Entrar</Button>
@@ -35,13 +35,13 @@ export default function LandingPage() {
           </div>
           
           <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-gray-900 sm:text-7xl lg:leading-[1.1] animate-in fade-in slide-in-from-bottom-8 duration-1000">
-            Cote ferramentas em segundos <br className="hidden sm:block" />
+            Cotações inteligentes em segundos <br className="hidden sm:block" />
             <span className="bg-gradient-to-r from-[#0EA5E9] to-[#10B981] bg-clip-text text-transparent">pelo WhatsApp.</span>
           </h1>
           
           <p className="mx-auto mt-8 max-w-2xl text-lg text-gray-600 sm:text-xl animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
-            A plataforma definitiva para empresas que buscam agilidade na compra de ferramentas. 
-            Gerencie fornecedores, ferramentas e envie cotações automáticas com um clique.
+            A plataforma definitiva para empresas que buscam agilidade na gestão de suprimentos e compras. 
+            Gerencie fornecedores, produtos e envie cotações automáticas com um clique.
           </p>
           
           <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row animate-in fade-in slide-in-from-bottom-16 duration-1000 delay-300">
@@ -76,7 +76,7 @@ export default function LandingPage() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { title: 'Gestão de Fornecedores', desc: 'Mantenha todos os seus contatos organizados em um só lugar.', icon: Users },
-              { title: 'Catálogo de Ferramentas', desc: 'Cadastre suas ferramentas com fotos e categorias específicas.', icon: Wrench },
+              { title: 'Catálogo de Produtos', desc: 'Cadastre seus itens com fotos, especificações e categorias específicas.', icon: MessageSquare },
               { title: 'Automação WhatsApp', desc: 'Envie cotações personalizadas para múltiplos fornecedores instantaneamente.', icon: MessageSquare },
               { title: 'Histórico Completo', desc: 'Acompanhe todas as cotações enviadas e seus status de resposta.', icon: History },
               { title: 'Segurança de Dados', desc: 'Seus dados estão protegidos e isolados por conta.', icon: Shield },
@@ -99,11 +99,11 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#0EA5E9] to-[#10B981] text-white">
-              <Wrench size={18} />
+              <MessageSquare size={18} />
             </div>
-            <span className="text-lg font-bold text-gray-900">AutoCota</span>
+            <span className="text-lg font-bold text-gray-900">QuoteFlow</span>
           </div>
-          <p className="text-sm text-gray-500">© 2026 AutoCota. Todos os direitos reservados.</p>
+          <p className="text-sm text-gray-500">© 2026 QuoteFlow. Todos os direitos reservados.</p>
           <div className="flex gap-6">
             <a href="#" className="text-sm text-gray-500 hover:text-gray-900">Termos</a>
             <a href="#" className="text-sm text-gray-500 hover:text-gray-900">Privacidade</a>
@@ -113,5 +113,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-import { LayoutDashboard, Users, MessageSquare, History } from 'lucide-react';

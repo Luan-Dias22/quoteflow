@@ -355,7 +355,7 @@ export default function ToolsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <Input 
-              placeholder="Buscar ferramentas..." 
+              placeholder="Buscar produtos..." 
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -364,7 +364,7 @@ export default function ToolsPage() {
           <div className="relative w-48">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <select 
-              className="flex h-10 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none appearance-none"
+              className="flex h-10 w-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none appearance-none"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
@@ -378,7 +378,7 @@ export default function ToolsPage() {
         </div>
         <Button onClick={() => { setEditingTool(null); setFormData({ name: '', description: '', category: CATEGORIES[0], referencePrice: '', contacts: [''] }); setIsModalOpen(true); }} className="gap-2">
           <Plus size={20} />
-          Nova Ferramenta
+          Novo Produto
         </Button>
       </div>
 
@@ -391,11 +391,11 @@ export default function ToolsPage() {
           <>
             {filteredTools.map((t) => (
               <Card key={t.id} className="group overflow-hidden border-none shadow-md transition-all hover:shadow-xl hover:-translate-y-1">
-                <div className="relative aspect-video w-full bg-gray-100">
+                <div className="relative aspect-video w-full bg-gray-100 dark:bg-slate-800">
                   {t.photoURL ? (
                     <img src={t.photoURL} alt={t.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-gray-300">
+                    <div className="flex h-full w-full items-center justify-center text-gray-300 dark:text-slate-700">
                       <Wrench size={48} />
                     </div>
                   )}
@@ -408,21 +408,21 @@ export default function ToolsPage() {
                     </Button>
                   </div>
                   <div className="absolute bottom-2 left-2">
-                    <span className="rounded-lg bg-white/90 backdrop-blur-sm px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-700 shadow-sm">
+                    <span className="rounded-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-700 dark:text-slate-300 shadow-sm">
                       {t.category}
                     </span>
                   </div>
                 </div>
                 <div className="p-5">
-                  <h3 className="mb-1 text-lg font-bold text-gray-900 truncate">{t.name}</h3>
-                  <p className="mb-4 text-sm text-gray-500 line-clamp-2 h-10">{t.description}</p>
+                  <h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-white truncate">{t.name}</h3>
+                  <p className="mb-4 text-sm text-gray-500 dark:text-slate-400 line-clamp-2 h-10">{t.description}</p>
                   
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-slate-800">
                     <div className="flex items-center gap-1 text-[#0EA5E9] font-bold">
                       <DollarSign size={14} />
                       <span>{t.referencePrice ? t.referencePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-gray-400 text-xs">
+                    <div className="flex items-center gap-1 text-gray-400 dark:text-slate-500 text-xs">
                       <Phone size={12} />
                       <span>{t.contacts.length} contatos</span>
                     </div>
@@ -443,8 +443,8 @@ export default function ToolsPage() {
                 <ChevronLeft size={16} />
                 Anterior
               </Button>
-              <span className="text-sm font-medium text-gray-500">
-                {isFirstPage ? 'Página 1' : isLastPage ? 'Última Página' : 'Mais Ferramentas'}
+              <span className="text-sm font-medium text-gray-500 dark:text-slate-400">
+                {isFirstPage ? 'Página 1' : isLastPage ? 'Última Página' : 'Mais Produtos'}
               </span>
               <Button
                 variant="outline"
@@ -462,8 +462,8 @@ export default function ToolsPage() {
           <div className="col-span-full py-20 text-center">
             <div className="flex flex-col items-center justify-center text-gray-400">
               <AlertCircle size={48} className="mb-4 opacity-20" />
-              <p className="text-lg font-medium">Nenhuma ferramenta encontrada</p>
-              <p className="text-sm">Cadastre sua primeira ferramenta para começar.</p>
+              <p className="text-lg font-medium">Nenhum produto encontrado</p>
+              <p className="text-sm">Cadastre seu primeiro produto para começar.</p>
             </div>
           </div>
         )}
@@ -472,7 +472,7 @@ export default function ToolsPage() {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={editingTool ? 'Editar Ferramenta' : 'Nova Ferramenta'}
+        title={editingTool ? 'Editar Produto' : 'Novo Produto'}
       >
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
           {error && (
@@ -482,13 +482,13 @@ export default function ToolsPage() {
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="name">Nome da Ferramenta</Label>
+            <Label htmlFor="name">Nome do Produto</Label>
             <Input 
               id="name" 
               value={formData.name} 
               onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
               required 
-              placeholder="Ex: Furadeira de Impacto 500W"
+              placeholder="Ex: Item ou Produto Específico"
             />
           </div>
 
@@ -497,7 +497,7 @@ export default function ToolsPage() {
               <Label htmlFor="category">Categoria</Label>
               <select 
                 id="category"
-                className="flex h-10 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
+                className="flex h-10 w-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
@@ -521,17 +521,17 @@ export default function ToolsPage() {
             <Label htmlFor="description">Descrição</Label>
             <textarea 
               id="description"
-              className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
+              className="flex min-h-[80px] w-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
               value={formData.description} 
               onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
-              placeholder="Detalhes técnicos da ferramenta..."
+              placeholder="Detalhes técnicos do produto..."
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Foto da Ferramenta</Label>
+            <Label>Foto do Produto</Label>
             <div className="flex items-center gap-4">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 text-gray-400 overflow-hidden">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 text-gray-400 overflow-hidden">
                 {imageFile ? (
                   <img src={URL.createObjectURL(imageFile)} alt="Preview" className="h-full w-full object-cover" />
                 ) : editingTool?.photoURL ? (
@@ -551,18 +551,18 @@ export default function ToolsPage() {
                 <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('photo')?.click()}>
                   Selecionar Imagem
                 </Button>
-                <p className="mt-1 text-[10px] text-gray-500">PNG, JPG ou WEBP até 2MB</p>
+                <p className="mt-1 text-[10px] text-gray-500 dark:text-slate-500">PNG, JPG ou WEBP até 2MB</p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3 pt-2 border-t border-gray-100">
+          <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <Label>Contatos de WhatsApp para automação</Label>
               <div className="flex gap-2">
                 {suppliers.length > 0 && (
                   <select 
-                    className="h-7 text-[10px] rounded-lg border-gray-200 bg-gray-50 px-2 focus:ring-[#0EA5E9] outline-none max-w-[150px]"
+                    className="h-7 text-[10px] rounded-lg border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white px-2 focus:ring-[#0EA5E9] outline-none max-w-[150px]"
                     onChange={(e) => {
                       const supplier = suppliers.find(s => s.id === e.target.value);
                       if (supplier) {
@@ -610,7 +610,7 @@ export default function ToolsPage() {
             )}
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editingTool ? 'Salvar Alterações' : 'Cadastrar Ferramenta'}
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editingTool ? 'Salvar Alterações' : 'Cadastrar Produto'}
             </Button>
           </div>
         </form>
@@ -634,7 +634,7 @@ export default function ToolsPage() {
               Cancelar
             </Button>
             <Button variant="danger" onClick={confirmDelete}>
-              Excluir Ferramenta
+              Excluir Produto
             </Button>
           </div>
         </div>

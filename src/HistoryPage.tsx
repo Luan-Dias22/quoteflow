@@ -181,7 +181,7 @@ export default function HistoryPage() {
           <div className="relative w-48">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <select 
-              className="flex h-10 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none appearance-none"
+              className="flex h-10 w-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none appearance-none"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -208,7 +208,7 @@ export default function HistoryPage() {
       <Card className="overflow-hidden border-none shadow-md">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs font-bold uppercase tracking-wider text-gray-500">
+            <thead className="bg-gray-50 dark:bg-slate-800 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                 <tr>
                   <th className="px-6 py-4">Data</th>
                   <th className="px-6 py-4">Ferramenta</th>
@@ -219,7 +219,7 @@ export default function HistoryPage() {
                   <th className="px-6 py-4 text-right">Ações</th>
                 </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-10 text-center">
@@ -228,14 +228,14 @@ export default function HistoryPage() {
                 </tr>
               ) : filteredQuotations.length > 0 ? (
                 filteredQuotations.map((q) => (
-                  <tr key={q.id} className="group hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                  <tr key={q.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-slate-400">
                       {format(new Date(q.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900">{q.toolName}</div>
+                      <div className="font-semibold text-gray-900 dark:text-white">{q.toolName}</div>
                       {q.quantity && (
-                        <div className="text-[10px] font-bold text-[#0EA5E9] bg-blue-50 px-1.5 py-0.5 rounded inline-block mt-1">
+                        <div className="text-[10px] font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded inline-block mt-1">
                           Qtd: {q.quantity}
                         </div>
                       )}
@@ -243,30 +243,30 @@ export default function HistoryPage() {
                     <td className="px-6 py-4">
                       <div className="flex -space-x-2 overflow-hidden">
                         {q.contacts.slice(0, 3).map((c, i) => (
-                          <div key={i} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-[#0EA5E9] border-2 border-white text-[10px] font-bold">
+                          <div key={i} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-[#0EA5E9] border-2 border-white dark:border-slate-900 text-[10px] font-bold">
                             {c.slice(-2)}
                           </div>
                         ))}
                         {q.contacts.length > 3 && (
-                          <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-500 border-2 border-white text-[10px] font-bold">
+                          <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-2 border-white dark:border-slate-900 text-[10px] font-bold">
                             +{q.contacts.length - 3}
                           </div>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 max-w-[250px]">
-                      <p className="truncate text-gray-500 italic">"{q.message}"</p>
+                      <p className="truncate text-gray-500 dark:text-slate-500 italic">"{q.message}"</p>
                     </td>
                     <td className="px-6 py-4">
                       {q.fileURL ? (
                         <div className="flex items-center gap-1">
-                          <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">
+                          <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50">
                             <FileText size={14} className="text-[#0EA5E9]" />
-                            <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700">{q.fileName || 'Arquivo'}</span>
-                            <div className="flex items-center border-l border-blue-200 ml-1 pl-1 gap-1">
+                            <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{q.fileName || 'Arquivo'}</span>
+                            <div className="flex items-center border-l border-blue-200 dark:border-blue-900/50 ml-1 pl-1 gap-1">
                               <button 
                                 onClick={() => setPreviewFile({ url: q.fileURL!, name: q.fileName || 'Cotação' })}
-                                className="p-1 text-[#0EA5E9] hover:bg-blue-100 rounded transition-colors"
+                                className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
                                 title="Visualizar"
                               >
                                 <Eye size={12} />
@@ -276,7 +276,7 @@ export default function HistoryPage() {
                                 download={q.fileName}
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="p-1 text-[#0EA5E9] hover:bg-blue-100 rounded transition-colors"
+                                className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
                                 title="Baixar"
                               >
                                 <Download size={12} />
@@ -286,7 +286,7 @@ export default function HistoryPage() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
+                            className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
                             onClick={() => handleRemoveFile(q.id!)}
                             title="Remover anexo"
                           >
@@ -308,14 +308,14 @@ export default function HistoryPage() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 text-gray-400 hover:text-[#0EA5E9] gap-1.5 text-[10px] relative overflow-hidden"
+                            className="h-8 text-gray-400 dark:text-slate-500 hover:text-[#0EA5E9] gap-1.5 text-[10px] relative overflow-hidden"
                             onClick={() => document.getElementById(`file-${q.id}`)?.click()}
                             disabled={uploadingId === q.id}
                           >
                             {uploadingId === q.id ? (
                               <>
                                 <div 
-                                  className="absolute inset-0 bg-blue-50 transition-all duration-300" 
+                                  className="absolute inset-0 bg-blue-50 dark:bg-blue-900/30 transition-all duration-300" 
                                   style={{ width: `${uploadProgress}%`, opacity: 0.5 }}
                                 />
                                 <Loader2 size={14} className="animate-spin relative z-10" />
@@ -334,9 +334,9 @@ export default function HistoryPage() {
                     <td className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
-                        q.status === 'Enviado' && 'bg-blue-100 text-blue-700',
-                        q.status === 'Respondido' && 'bg-emerald-100 text-emerald-700',
-                        q.status === 'Negociando' && 'bg-orange-100 text-orange-700'
+                        q.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                        q.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                        q.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
                       )}>
                         {q.status === 'Enviado' && <Clock size={12} />}
                         {q.status === 'Respondido' && <CheckCircle2 size={12} />}
@@ -347,7 +347,7 @@ export default function HistoryPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <select 
-                          className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 cursor-pointer"
+                          className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                           value={q.status}
                           onChange={(e) => handleUpdateStatus(q.id!, e.target.value as Quotation['status'])}
                         >
@@ -375,7 +375,7 @@ export default function HistoryPage() {
               ) : (
                 <tr>
                   <td colSpan={6} className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center justify-center text-gray-400">
+                    <div className="flex flex-col items-center justify-center text-gray-400 dark:text-slate-600">
                       <AlertCircle size={48} className="mb-4 opacity-20" />
                       <p className="text-lg font-medium">Nenhum registro encontrado</p>
                       <p className="text-sm">Suas cotações enviadas aparecerão aqui.</p>
@@ -400,16 +400,16 @@ export default function HistoryPage() {
             {previewFile.name.toLowerCase().endsWith('.pdf') ? (
               <iframe 
                 src={`${previewFile.url}#toolbar=0`} 
-                className="w-full h-full flex-1 rounded-xl border border-gray-100"
+                className="w-full h-full flex-1 rounded-xl border border-gray-100 dark:border-slate-800"
                 title="PDF Preview"
               />
             ) : (
               <div className="flex flex-col items-center justify-center flex-1 p-10 text-center">
-                <div className="h-20 w-20 rounded-full bg-blue-50 flex items-center justify-center mb-4">
+                <div className="h-20 w-20 rounded-full bg-blue-50 dark:bg-slate-800 flex items-center justify-center mb-4">
                   <FileText size={40} className="text-[#0EA5E9]" />
                 </div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">Visualização não disponível</h4>
-                <p className="text-sm text-gray-500 mb-6 max-w-xs">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Visualização não disponível</h4>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mb-6 max-w-xs">
                   Arquivos Excel ou Word não podem ser visualizados diretamente no navegador. 
                   Por favor, faça o download para abrir no seu dispositivo.
                 </p>
@@ -431,7 +431,7 @@ export default function HistoryPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-slate-400">
             Tem certeza que deseja excluir esta cotação do histórico? Esta ação não pode ser desfeita.
           </p>
           <div className="flex justify-end gap-3">
