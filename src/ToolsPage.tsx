@@ -382,57 +382,75 @@ export default function ToolsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
         {loading ? (
-          <div className="col-span-full py-20 text-center">
+          <div className="py-20 text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#0EA5E9]" />
           </div>
         ) : filteredTools.length > 0 ? (
-          <>
-            {filteredTools.map((t) => (
-              <Card key={t.id} className="group overflow-hidden border-none shadow-md transition-all hover:shadow-xl hover:-translate-y-1">
-                <div className="relative aspect-video w-full bg-gray-100 dark:bg-slate-800">
-                  {t.photoURL ? (
-                    <img src={t.photoURL} alt={t.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-gray-300 dark:text-slate-700">
-                      <Wrench size={48} />
-                    </div>
-                  )}
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="secondary" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => openEdit(t)}>
-                      <Edit2 size={14} />
-                    </Button>
-                    <Button variant="danger" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleDeleteClick(t.id!)}>
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
-                  <div className="absolute bottom-2 left-2">
-                    <span className="rounded-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-700 dark:text-slate-300 shadow-sm">
-                      {t.category}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-white truncate">{t.name}</h3>
-                  <p className="mb-4 text-sm text-gray-500 dark:text-slate-400 line-clamp-2 h-10">{t.description}</p>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-slate-800">
-                    <div className="flex items-center gap-1 text-[#0EA5E9] font-bold">
-                      <DollarSign size={14} />
-                      <span>{t.referencePrice ? t.referencePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-gray-400 dark:text-slate-500 text-xs">
-                      <Phone size={12} />
-                      <span>{t.contacts.length} contatos</span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Produto</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Categoria</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Preço Ref.</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Contatos</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+                {filteredTools.map((t) => (
+                  <tr key={t.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 overflow-hidden">
+                          {t.photoURL ? (
+                            <img src={t.photoURL} alt={t.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <Wrench size={18} />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-gray-900 dark:text-white truncate">{t.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-[200px]">{t.description}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300">
+                        {t.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1 text-gray-900 dark:text-white font-medium">
+                        <DollarSign size={14} className="text-gray-400" />
+                        <span>{t.referencePrice ? t.referencePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1 text-gray-500 dark:text-slate-400 text-sm">
+                        <Users size={14} />
+                        <span>{t.contacts.length}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEdit(t)}>
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => handleDeleteClick(t.id!)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
             {/* Pagination Controls */}
-            <div className="col-span-full flex items-center justify-center gap-4 pt-8">
+            <div className="flex items-center justify-center gap-4 py-6 border-t border-gray-100 dark:border-slate-800">
               <Button
                 variant="outline"
                 size="sm"
@@ -457,9 +475,9 @@ export default function ToolsPage() {
                 <ChevronRight size={16} />
               </Button>
             </div>
-          </>
+          </div>
         ) : (
-          <div className="col-span-full py-20 text-center">
+          <div className="py-20 text-center">
             <div className="flex flex-col items-center justify-center text-gray-400">
               <AlertCircle size={48} className="mb-4 opacity-20" />
               <p className="text-lg font-medium">Nenhum produto encontrado</p>
