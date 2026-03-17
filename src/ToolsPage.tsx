@@ -44,10 +44,17 @@ import { cn } from './lib/utils';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
 
 const CATEGORIES = [
+  'Manutenção e Peças',
+  'Cabos',
+  'Papelaria',
+  'Chaparia',
+  'Elétrica Industrial',
+  'Automação e Controle',
+  'Infraestrutura',
+  'Climatização',
   'Elétrica',
   'Mecânica',
   'Hidráulica',
-  'Ferramentas Manuais',
   'Pneumática',
   'Medição',
   'Segurança (EPI)',
