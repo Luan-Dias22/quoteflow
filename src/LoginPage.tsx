@@ -28,20 +28,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 p-4 transition-colors duration-300">
       <div className="w-full max-w-md">
-        <Link to="/" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+        <Link to="/" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
           <ArrowLeft size={16} />
           Voltar para o início
         </Link>
 
-        <Card className="p-8 shadow-xl border-none">
+        <Card className="p-8 shadow-xl border-none bg-white dark:bg-slate-900">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0EA5E9] to-[#10B981] text-white shadow-lg shadow-blue-200">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0EA5E9] to-[#10B981] text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/20">
               <Wrench size={24} />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Bem-vindo de volta</h1>
-            <p className="mt-2 text-sm text-gray-500">Acesse sua conta para gerenciar suas cotações.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bem-vindo de volta</h1>
+            <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">Acesse sua conta para gerenciar suas cotações.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -83,7 +83,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600 border border-red-100">
+              <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/30">
                 {error}
               </div>
             )}
@@ -93,7 +93,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-8 text-center text-sm text-gray-500">
+          <div className="mt-8 text-center text-sm text-gray-500 dark:text-slate-400">
             Não tem uma conta?{' '}
             <Link to="/register" className="font-semibold text-[#0EA5E9] hover:underline">
               Crie uma agora

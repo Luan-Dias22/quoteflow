@@ -285,8 +285,11 @@ export default function AutomationPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-[#0EA5E9]" />
+      <div className="flex h-[60vh] items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-[#0EA5E9]" />
+          <p className="text-sm text-gray-500 dark:text-slate-400 animate-pulse">Carregando dados...</p>
+        </div>
       </div>
     );
   }

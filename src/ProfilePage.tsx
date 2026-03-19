@@ -160,7 +160,7 @@ export default function ProfilePage() {
         <div className="w-full md:w-1/3 space-y-6">
           <Card className="p-6 text-center">
             <div className="relative mx-auto mb-4 h-32 w-32">
-              <div className="h-full w-full rounded-full border-4 border-white bg-gray-100 shadow-md overflow-hidden flex items-center justify-center">
+              <div className="h-full w-full rounded-full border-4 border-white dark:border-slate-800 bg-gray-100 dark:bg-slate-800 shadow-md overflow-hidden flex items-center justify-center">
                 {isCompressing ? (
                   <div className="flex flex-col items-center justify-center gap-1">
                     <Loader2 size={24} className="animate-spin text-[#0EA5E9]" />
@@ -177,14 +177,16 @@ export default function ProfilePage() {
                 <input type="file" className="hidden" accept="image/*" onChange={handleUpdatePhoto} />
               </label>
             </div>
-            <h3 className="text-xl font-bold text-gray-900">{profile?.companyName}</h3>
-            <p className="text-sm text-gray-500">{profile?.email}</p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{profile?.companyName}</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">{profile?.email}</p>
           </Card>
 
           {(success || error) && (
             <div className={cn(
               'flex items-center gap-3 rounded-2xl p-4 text-sm font-medium animate-in slide-in-from-top-2',
-              success ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
+              success 
+                ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/30' 
+                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-800/30'
             )}>
               {success ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
               {success || error}
@@ -195,7 +197,7 @@ export default function ProfilePage() {
         {/* Profile Forms */}
         <div className="flex-1 space-y-8">
           <Card className="p-8">
-            <div className="flex items-center gap-2 mb-6 text-gray-900">
+            <div className="flex items-center gap-2 mb-6 text-gray-900 dark:text-white">
               <Building2 size={20} className="text-[#0EA5E9]" />
               <h3 className="text-lg font-bold">Dados da Empresa</h3>
             </div>
@@ -219,7 +221,7 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail (Não pode ser alterado aqui)</Label>
-                <Input id="email" value={formData.email} disabled className="bg-gray-50" />
+                <Input id="email" value={formData.email} disabled className="bg-gray-50 dark:bg-slate-800/50" />
               </div>
               <div className="pt-4">
                 <Button type="submit" disabled={loading}>
@@ -230,7 +232,7 @@ export default function ProfilePage() {
           </Card>
 
           <Card className="p-8">
-            <div className="flex items-center gap-2 mb-6 text-gray-900">
+            <div className="flex items-center gap-2 mb-6 text-gray-900 dark:text-white">
               <Lock size={20} className="text-[#0EA5E9]" />
               <h3 className="text-lg font-bold">Segurança</h3>
             </div>

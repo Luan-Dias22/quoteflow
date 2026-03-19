@@ -230,16 +230,16 @@ export default function HistoryPage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 text-red-700 rounded-xl animate-in slide-in-from-top-2">
+        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl animate-in slide-in-from-top-2 border border-red-100 dark:border-red-800/30">
           <AlertCircle size={20} />
           <p className="text-sm font-medium flex-1">{error}</p>
-          <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 rounded-lg transition-colors">
+          <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors">
             <X size={16} />
           </button>
         </div>
       )}
 
-      <Card className="overflow-hidden border-none shadow-md">
+      <Card className="overflow-hidden border-none shadow-md bg-white dark:bg-slate-900">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-slate-800 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">

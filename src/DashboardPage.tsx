@@ -17,9 +17,12 @@ import { Supplier, Tool, Quotation } from './types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useTheme } from './contexts/ThemeContext';
+import { cn } from './lib/utils';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [stats, setStats] = useState({
     suppliers: 0,
     tools: 0,
@@ -131,10 +134,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#0EA5E9] border-t-transparent" />
-          <p className="text-sm text-gray-500 animate-pulse">Carregando painel...</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 animate-pulse">Carregando painel...</p>
         </div>
       </div>
     );
@@ -172,33 +175,33 @@ export default function DashboardPage() {
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" className="dark:stroke-slate-800" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#1E293B' : '#F1F5F9'} />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748B', fontSize: 12 }}
+                  tick={{ fill: theme === 'dark' ? '#94A3B8' : '#64748B', fontSize: 12 }}
                   dy={10}
                 />
                 <YAxis 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748B', fontSize: 12 }}
+                  tick={{ fill: theme === 'dark' ? '#94A3B8' : '#64748B', fontSize: 12 }}
                 />
                 <Tooltip 
-                  cursor={{ fill: '#F8FAFC', className: 'dark:fill-slate-800/50' }}
+                  cursor={{ fill: theme === 'dark' ? '#1E293B' : '#F8FAFC' }}
                   contentStyle={{ 
                     borderRadius: '12px', 
                     border: 'none', 
                     boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: theme === 'dark' ? '#0F172A' : '#FFFFFF',
                   }}
                   itemStyle={{ color: '#0EA5E9' }}
-                  labelStyle={{ color: '#64748B', fontWeight: 'bold' }}
+                  labelStyle={{ color: theme === 'dark' ? '#94A3B8' : '#64748B', fontWeight: 'bold' }}
                 />
                 <Bar dataKey="total" radius={[6, 6, 0, 0]}>
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#0EA5E9' : '#E2E8F0'} className={index === chartData.length - 1 ? '' : 'dark:fill-slate-800'} />
+                    <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#0EA5E9' : (theme === 'dark' ? '#1E293B' : '#E2E8F0')} />
                   ))}
                 </Bar>
               </BarChart>
@@ -245,5 +248,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-import { cn } from './lib/utils';

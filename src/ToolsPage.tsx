@@ -502,7 +502,7 @@ export default function ToolsPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
               <AlertCircle size={18} className="shrink-0" />
               <p>{error}</p>
             </div>
@@ -648,7 +648,7 @@ export default function ToolsPage() {
         title="Confirmar Exclusão"
       >
         <div className="space-y-4">
-          <div className="flex items-center gap-3 p-4 bg-red-50 text-red-700 rounded-xl">
+          <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-800/30">
             <AlertCircle size={24} />
             <p className="text-sm font-medium">
               Tem certeza que deseja excluir esta ferramenta? Esta ação não pode ser desfeita.

@@ -164,7 +164,7 @@ export default function SuppliersPage() {
         </Button>
       </div>
 
-      <Card className="overflow-hidden border-none shadow-md">
+      <Card className="overflow-hidden border-none shadow-md bg-white dark:bg-slate-900">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-slate-800 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
@@ -252,7 +252,7 @@ export default function SuppliersPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
               <AlertCircle size={18} className="shrink-0" />
               <p>{error}</p>
             </div>

@@ -162,10 +162,10 @@ export default function LeadsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
+      <div className="flex h-[60vh] items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-[#0EA5E9]" />
-          <p className="text-sm text-gray-500 animate-pulse">Carregando leads...</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 animate-pulse">Carregando leads...</p>
         </div>
       </div>
     );
@@ -173,13 +173,13 @@ export default function LeadsPage() {
 
   if (error) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Card className="p-8 max-w-md text-center space-y-4 border-red-100 bg-red-50/30">
-          <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+      <div className="flex h-[60vh] items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
+        <Card className="p-8 max-w-md text-center space-y-4 border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10">
+          <div className="mx-auto w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
             <AlertCircle size={24} />
           </div>
-          <h2 className="text-lg font-bold text-gray-900">Ops! Algo deu errado</h2>
-          <p className="text-sm text-gray-600">{error}</p>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Ops! Algo deu errado</h2>
+          <p className="text-sm text-gray-600 dark:text-slate-400">{error}</p>
           <Button onClick={() => window.location.reload()} variant="outline" size="sm">
             Tentar novamente
           </Button>
@@ -192,8 +192,8 @@ export default function LeadsPage() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Leads</h1>
-          <p className="text-gray-500">Gerencie potenciais clientes e contatos recebidos.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Leads</h1>
+          <p className="text-gray-500 dark:text-slate-400">Gerencie potenciais clientes e contatos recebidos.</p>
         </div>
       </div>
 
@@ -245,12 +245,12 @@ export default function LeadsPage() {
                   <tr key={lead.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-[#0EA5E9] font-bold">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/20 text-[#0EA5E9] font-bold">
                           {lead.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <p className="font-bold text-gray-900 dark:text-white">{lead.name}</p>
-                          <p className="text-xs text-gray-500">{lead.source}</p>
+                          <p className="text-xs text-gray-500 dark:text-slate-500">{lead.source}</p>
                         </div>
                       </div>
                     </td>
@@ -281,7 +281,7 @@ export default function LeadsPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-500">
                       <div className="flex items-center gap-2">
                         <Calendar size={14} />
                         {formatDate(lead.createdAt)}
@@ -388,7 +388,7 @@ export default function LeadsPage() {
         title="Excluir Lead"
       >
         <div className="space-y-4">
-          <p className="text-gray-600">Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.</p>
+          <p className="text-gray-600 dark:text-slate-400">Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.</p>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setConfirmDelete(null)}>Cancelar</Button>
             <Button 
