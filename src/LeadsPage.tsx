@@ -38,6 +38,7 @@ export default function LeadsPage() {
   const { user, profile } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -48,8 +49,12 @@ export default function LeadsPage() {
     if (!user) return;
 
     // If admin, show all leads. Otherwise, show leads for the user and admin_demo leads
+    const isAdmin = profile?.role === 'admin' || 
+                    user.email === 'luansold@gmail.com' || 
+                    user.email === 'luansold@live.com';
+
     let q;
-    if (profile?.role === 'admin') {
+    if (isAdmin) {
       q = query(collection(db, 'leads'));
     } else {
       q = query(
@@ -58,24 +63,45 @@ export default function LeadsPage() {
       );
     }
 
-    console.log("Fetching leads with query for user:", user.uid, "Role:", profile?.role);
+    console.log("Fetching leads with query for user:", user.uid, "Is Admin:", isAdmin);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log("Leads snapshot received, count:", snapshot.size);
-      const leadsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Lead[];
-      
-      // Sort in memory to avoid composite index requirement
-      leadsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      setLeads(leadsData);
+      try {
+        console.log("Leads snapshot received, count:", snapshot.size);
+        const leadsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            // Ensure createdAt is a string or handle timestamp
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString())
+          };
+        }) as Lead[];
+        
+        // Sort in memory to avoid composite index requirement
+        leadsData.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return (isNaN(dateB) ? 0 : dateB) - (isNaN(dateA) ? 0 : dateA);
+        });
+        
+        setLeads(leadsData);
+        setLoading(false);
+        setError(null);
+      } catch (err) {
+        console.error("Error processing leads data:", err);
+        setError("Erro ao processar dados dos leads. Verifique o formato dos dados.");
+        setLoading(false);
+      }
+    }, (err) => {
+      console.error("Error fetching leads:", err);
       setLoading(false);
-    }, (error) => {
-      console.error("Error fetching leads:", error);
-      handleFirestoreError(error, OperationType.GET, 'leads');
-      setLoading(false);
+      setError("Erro ao carregar leads. Verifique suas permissões.");
+      try {
+        handleFirestoreError(err, OperationType.GET, 'leads');
+      } catch (e) {
+        // Error already logged by handleFirestoreError
+      }
     });
 
     return () => unsubscribe();
@@ -113,10 +139,41 @@ export default function LeadsPage() {
     return matchesSearch && matchesStatus;
   });
 
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return 'Data inválida';
+      return format(date, "dd/MM/yyyy", { locale: ptBR });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return 'Erro na data';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#0EA5E9]" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-[#0EA5E9]" />
+          <p className="text-sm text-gray-500 animate-pulse">Carregando leads...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Card className="p-8 max-w-md text-center space-y-4 border-red-100 bg-red-50/30">
+          <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+            <AlertCircle size={24} />
+          </div>
+          <h2 className="text-lg font-bold text-gray-900">Ops! Algo deu errado</h2>
+          <p className="text-sm text-gray-600">{error}</p>
+          <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+            Tentar novamente
+          </Button>
+        </Card>
       </div>
     );
   }
@@ -218,7 +275,7 @@ export default function LeadsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center gap-2">
                         <Calendar size={14} />
-                        {format(new Date(lead.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                        {formatDate(lead.createdAt)}
                       </div>
                     </td>
                     <td className="px-6 py-4">

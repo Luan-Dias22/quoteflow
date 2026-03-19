@@ -19,7 +19,7 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
         ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
-         (request.auth.token.email in ["luansold@gmail.com", "luansold@live.com"] && request.auth.token.email_verified == true));
+         (request.auth.token.email in ["luansold@gmail.com", "luansold@live.com"]));
     }
 
     function hasOnlyAllowedFields(fields) {
@@ -113,7 +113,7 @@ service cloud.firestore {
 
     // Leads
     match /leads/{leadId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.userId == 'admin_demo' || isAdmin());
       allow create: if isValidLead(request.resource.data);
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidLead(request.resource.data);
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());

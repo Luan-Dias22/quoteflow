@@ -66,7 +66,15 @@ export default function DashboardPage() {
         }).reverse();
 
         const data = last7Days.map(day => {
-          const count = quotations.filter(q => format(new Date(q.createdAt), 'dd/MM') === day).length;
+          const count = quotations.filter(q => {
+            try {
+              const date = new Date(q.createdAt);
+              if (isNaN(date.getTime())) return false;
+              return format(date, 'dd/MM') === day;
+            } catch {
+              return false;
+            }
+          }).length;
           return { name: day, total: count };
         });
         setChartData(data);
@@ -81,6 +89,16 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [user]);
 
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return 'Data inválida';
+      return format(date, "dd 'de' MMM", { locale: ptBR });
+    } catch {
+      return 'Erro na data';
+    }
+  };
+
   const statCards = [
     { label: 'Total Fornecedores', value: stats.suppliers, icon: Users, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { label: 'Total Ferramentas', value: stats.tools, icon: Wrench, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
@@ -91,7 +109,10 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#0EA5E9] border-t-transparent" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#0EA5E9] border-t-transparent" />
+          <p className="text-sm text-gray-500 animate-pulse">Carregando painel...</p>
+        </div>
       </div>
     );
   }
@@ -178,7 +199,7 @@ export default function DashboardPage() {
                   <div className="flex-1 overflow-hidden">
                     <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{q.toolName}</p>
                     <p className="text-xs text-gray-500 dark:text-slate-400">
-                      {q.contacts.length} {q.contacts.length === 1 ? 'contato' : 'contatos'} • {format(new Date(q.createdAt), "dd 'de' MMM", { locale: ptBR })}
+                      {q.contacts.length} {q.contacts.length === 1 ? 'contato' : 'contatos'} • {formatDate(q.createdAt)}
                     </p>
                   </div>
                   <span className={cn(
