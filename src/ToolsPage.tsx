@@ -52,6 +52,7 @@ const CATEGORIES = [
   'Automação e Controle',
   'Infraestrutura',
   'Climatização',
+  'Ferramentas Manuais',
   'Elétrica',
   'Mecânica',
   'Hidráulica',
