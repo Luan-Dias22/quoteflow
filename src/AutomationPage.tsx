@@ -20,7 +20,7 @@ import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase';
 import { useAuth } from './contexts/AuthContext';
-import { Button, Input, Label, Card } from './components/UI';
+import { Button, Input, Label, Card, Textarea } from './components/UI';
 import { Tool, Supplier } from './types';
 import { cn } from './lib/utils';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
@@ -585,8 +585,8 @@ export default function AutomationPage() {
                     </label>
                   </div>
                 </div>
-                <textarea 
-                  className="w-full min-h-[150px] rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none transition-colors"
+                <Textarea 
+                  className="min-h-[150px] p-4"
                   value={messageTemplate}
                   onChange={(e) => setMessageTemplate(e.target.value)}
                 />

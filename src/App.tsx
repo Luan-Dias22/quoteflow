@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import Layout from './components/Layout';
 import LandingPage from './LandingPage';
 import LoginPage from './LoginPage';
@@ -11,6 +12,7 @@ import SuppliersPage from './SuppliersPage';
 import ToolsPage from './ToolsPage';
 import AutomationPage from './AutomationPage';
 import HistoryPage from './HistoryPage';
+import LeadsPage from './LeadsPage';
 import ProfilePage from './ProfilePage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -46,25 +48,28 @@ export default function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <Router>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
-              <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-              <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+          <NotificationProvider>
+            <Router>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
+                <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+                <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
 
-              {/* Protected Routes */}
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
-              <Route path="/tools" element={<ProtectedRoute><ToolsPage /></ProtectedRoute>} />
-              <Route path="/automation" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
-              <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                <Route path="/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
+                <Route path="/tools" element={<ProtectedRoute><ToolsPage /></ProtectedRoute>} />
+                <Route path="/automation" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
+                <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+                <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </Router>
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </Router>
+          </NotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

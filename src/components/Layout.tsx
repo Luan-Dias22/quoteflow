@@ -12,7 +12,9 @@ import {
   X,
   ChevronRight,
   Sun,
-  Moon
+  Moon,
+  Zap,
+  Target
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -31,9 +33,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Users, label: 'Fornecedores', path: '/suppliers' },
-    { icon: MessageSquare, label: 'Produtos', path: '/tools' },
-    { icon: MessageSquare, label: 'Automação', path: '/automation' },
+    { icon: Wrench, label: 'Produtos', path: '/tools' },
+    { icon: Zap, label: 'Automação', path: '/automation' },
     { icon: History, label: 'Histórico', path: '/history' },
+    { icon: Target, label: 'Leads', path: '/leads' },
     { icon: User, label: 'Perfil', path: '/profile' },
   ];
 

@@ -51,3 +51,15 @@ export interface Quotation {
   fileName?: string;
   createdAt: string;
 }
+
+export interface Lead {
+  id?: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  source: string;
+  status: 'Novo' | 'Em Contato' | 'Convertido' | 'Perdido';
+  createdAt: string;
+}

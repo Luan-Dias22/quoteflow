@@ -66,6 +66,16 @@ service cloud.firestore {
              (!('fileName' in data) || data.fileName is string);
     }
 
+    function isValidLead(data) {
+      return hasOnlyAllowedFields(['userId', 'name', 'email', 'phone', 'message', 'source', 'status', 'createdAt', 'updatedAt']) &&
+             (data.userId == 'admin_demo' || (isAuthenticated() && data.userId == request.auth.uid)) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 500 &&
+             data.email is string && data.email.size() < 500 &&
+             data.phone is string && data.phone.size() < 50 &&
+             data.message is string && data.message.size() < 5000 &&
+             data.status in ['Novo', 'Em Contato', 'Convertido', 'Perdido'];
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -98,6 +108,14 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && isValidQuotation(request.resource.data);
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidQuotation(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Leads
+    match /leads/{leadId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isValidLead(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidLead(request.resource.data);
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }

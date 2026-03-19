@@ -38,7 +38,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 import { db, storage } from './firebase';
 import { useAuth } from './contexts/AuthContext';
-import { Button, Input, Label, Card, Modal } from './components/UI';
+import { Button, Input, Label, Card, Modal, Textarea } from './components/UI';
 import { Tool, Supplier } from './types';
 import { cn } from './lib/utils';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
@@ -545,9 +545,8 @@ export default function ToolsPage() {
 
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
-            <textarea 
+            <Textarea 
               id="description"
-              className="flex min-h-[80px] w-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9]"
               value={formData.description} 
               onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
               placeholder="Detalhes técnicos do produto..."

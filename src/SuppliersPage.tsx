@@ -15,7 +15,7 @@ import {
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
 import { useAuth } from './contexts/AuthContext';
-import { Button, Input, Label, Card, Modal } from './components/UI';
+import { Button, Input, Label, Card, Modal, Textarea } from './components/UI';
 import { Supplier } from './types';
 import { cn } from './lib/utils';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
@@ -325,9 +325,8 @@ export default function SuppliersPage() {
 
           <div className="space-y-2">
             <Label htmlFor="observations">Observações</Label>
-            <textarea 
+            <Textarea 
               id="observations"
-              className="flex min-h-[80px] w-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9] disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.observations} 
               onChange={(e) => setFormData({ ...formData, observations: e.target.value })} 
               placeholder="Notas sobre o fornecedor..."

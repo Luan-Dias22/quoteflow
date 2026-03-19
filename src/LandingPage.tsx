@@ -1,10 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, CheckCircle, Zap, Shield, ArrowRight, Users, History, LayoutDashboard } from 'lucide-react';
-import { Button } from './components/UI';
+import { MessageSquare, CheckCircle, Zap, Shield, ArrowRight, Users, History, LayoutDashboard, Send, Loader2, Mail, Phone, User, AlertCircle } from 'lucide-react';
+import { Button, Input, Textarea } from './components/UI';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, 'leads'), {
+        ...formData,
+        userId: 'admin_demo', // For demo purposes, or we could leave it empty if it's a global lead
+        source: 'Landing Page',
+        status: 'Novo',
+        createdAt: new Date().toISOString()
+      });
+      setSubmitted(true);
+      setFormData({ name: '', email: '', phone: '', message: '' });
+    } catch (error) {
+      console.error('Error submitting lead:', error);
+      setError('Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente mais tarde.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-blue-100">
@@ -90,6 +122,134 @@ export default function LandingPage() {
                 <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Form / Lead Generation */}
+      <section className="py-24 bg-white">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6 tracking-tight">Ficou com alguma dúvida?</h2>
+              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                Nossa equipe está pronta para te ajudar a transformar sua gestão de compras. 
+                Preencha o formulário e entraremos em contato o mais rápido possível.
+              </p>
+              
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#0EA5E9]">
+                    <CheckCircle size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">Atendimento Personalizado</h4>
+                    <p className="text-gray-500">Suporte humano e dedicado.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#0EA5E9]">
+                    <Zap size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">Implementação Rápida</h4>
+                    <p className="text-gray-500">Comece a usar em menos de 5 minutos.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-2xl shadow-blue-100">
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium flex items-center gap-2">
+                  <AlertCircle size={18} />
+                  {error}
+                </div>
+              )}
+              {submitted ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
+                    <CheckCircle size={40} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Mensagem Enviada!</h3>
+                  <p className="text-gray-600 mb-8">Obrigado pelo interesse. Nossa equipe entrará em contato em breve.</p>
+                  <Button variant="outline" onClick={() => setSubmitted(false)}>Enviar outra mensagem</Button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Nome Completo</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <Input 
+                        required
+                        className="pl-10 h-12"
+                        placeholder="Seu nome"
+                        value={formData.name}
+                        onChange={e => setFormData({...formData, name: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">E-mail</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <Input 
+                          required
+                          type="email"
+                          className="pl-10 h-12"
+                          placeholder="seu@email.com"
+                          value={formData.email}
+                          onChange={e => setFormData({...formData, email: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">WhatsApp</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <Input 
+                          required
+                          className="pl-10 h-12"
+                          placeholder="(00) 00000-0000"
+                          value={formData.phone}
+                          onChange={e => setFormData({...formData, phone: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Como podemos ajudar?</label>
+                    <Textarea 
+                      required
+                      className="min-h-[120px]"
+                      placeholder="Conte-nos um pouco sobre sua necessidade..."
+                      value={formData.message}
+                      onChange={e => setFormData({...formData, message: e.target.value})}
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="w-full h-14 text-lg shadow-xl shadow-blue-200"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <>
+                        Falar com Especialista
+                        <Send size={20} className="ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       </section>

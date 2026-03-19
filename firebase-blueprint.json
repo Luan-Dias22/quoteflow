@@ -70,6 +70,22 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "toolId", "toolName", "contacts", "message", "status", "createdAt"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "Potenciais clientes ou contatos interessados.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "source": { "type": "string" },
+        "status": { "type": "string", "enum": ["Novo", "Em Contato", "Convertido", "Perdido"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "email", "phone", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -88,6 +104,10 @@
     "/quotations": {
       "schema": "Quotation",
       "description": "Histórico de cotações."
+    },
+    "/leads": {
+      "schema": "Lead",
+      "description": "Coleção de leads."
     }
   }
 }
