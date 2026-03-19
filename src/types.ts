@@ -4,6 +4,7 @@ export interface UserProfile {
   cnpj?: string;
   email: string;
   photoURL?: string;
+  role?: 'admin' | 'user';
 }
 
 export interface Supplier {

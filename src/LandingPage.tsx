@@ -21,13 +21,14 @@ export default function LandingPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'leads'), {
+      const docRef = await addDoc(collection(db, 'leads'), {
         ...formData,
         userId: 'admin_demo', // For demo purposes, or we could leave it empty if it's a global lead
         source: 'Landing Page',
         status: 'Novo',
         createdAt: new Date().toISOString()
       });
+      console.log("Lead submitted successfully with ID:", docRef.id);
       setSubmitted(true);
       setFormData({ name: '', email: '', phone: '', message: '' });
     } catch (error) {

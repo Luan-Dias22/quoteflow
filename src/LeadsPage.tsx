@@ -35,7 +35,7 @@ import { ptBR } from 'date-fns/locale';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
 
 export default function LeadsPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,14 +47,21 @@ export default function LeadsPage() {
   useEffect(() => {
     if (!user) return;
 
-    // We listen for all leads for now, or we could filter by userId if we want to isolate them
-    // For the demo, we'll show leads where userId is 'admin_demo' or matches current user
-    const q = query(
-      collection(db, 'leads'),
-      where('userId', 'in', [user.uid, 'admin_demo'])
-    );
+    // If admin, show all leads. Otherwise, show leads for the user and admin_demo leads
+    let q;
+    if (profile?.role === 'admin') {
+      q = query(collection(db, 'leads'));
+    } else {
+      q = query(
+        collection(db, 'leads'),
+        where('userId', 'in', [user.uid, 'admin_demo'])
+      );
+    }
+
+    console.log("Fetching leads with query for user:", user.uid, "Role:", profile?.role);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log("Leads snapshot received, count:", snapshot.size);
       const leadsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -67,11 +74,12 @@ export default function LeadsPage() {
       setLoading(false);
     }, (error) => {
       console.error("Error fetching leads:", error);
+      handleFirestoreError(error, OperationType.GET, 'leads');
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, profile]);
 
   const handleUpdateStatus = async (leadId: string, newStatus: Lead['status']) => {
     try {
