@@ -25,7 +25,7 @@ export default function LandingPage() {
         ...formData,
         userId: 'admin_demo', // For demo purposes, or we could leave it empty if it's a global lead
         source: 'Landing Page',
-        status: 'Novo',
+        status: 'Novo Pedido',
         createdAt: new Date().toISOString()
       });
       console.log("Lead submitted successfully with ID:", docRef.id);

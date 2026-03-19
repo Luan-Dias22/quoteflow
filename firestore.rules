@@ -73,7 +73,7 @@ service cloud.firestore {
              data.email is string && data.email.size() < 500 &&
              data.phone is string && data.phone.size() < 50 &&
              data.message is string && data.message.size() < 5000 &&
-             data.status in ['Novo', 'Em Contato', 'Convertido', 'Perdido'];
+             data.status in ['Novo Pedido', 'Pedido Lançado', 'Pedido Concluído'];
     }
 
     // ===============================================================

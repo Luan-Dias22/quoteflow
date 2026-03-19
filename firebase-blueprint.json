@@ -82,7 +82,7 @@
         "phone": { "type": "string" },
         "message": { "type": "string" },
         "source": { "type": "string" },
-        "status": { "type": "string", "enum": ["Novo", "Em Contato", "Convertido", "Perdido"] },
+        "status": { "type": "string", "enum": ["Novo Pedido", "Pedido Lançado", "Pedido Concluído"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "email", "phone", "status", "createdAt"]

@@ -200,6 +200,7 @@ export default function AutomationPage() {
     setError(null);
 
     try {
+      const batchTimestamp = new Date().toISOString();
       let fileURL = '';
       let fileName = '';
 
@@ -276,7 +277,7 @@ export default function AutomationPage() {
               status: 'Enviado',
               fileURL: fileURL || null,
               fileName: fileName || null,
-              createdAt: new Date().toISOString()
+              createdAt: batchTimestamp
             });
           } catch (error) {
             handleFirestoreError(error, OperationType.CREATE, 'quotations');
@@ -308,7 +309,7 @@ export default function AutomationPage() {
                 status: 'Enviado',
                 fileURL: fileURL || null,
                 fileName: fileName || null,
-                createdAt: new Date().toISOString()
+                createdAt: batchTimestamp
               });
             } catch (error) {
               handleFirestoreError(error, OperationType.CREATE, 'quotations');
@@ -338,7 +339,7 @@ export default function AutomationPage() {
                   status: 'Enviado',
                   fileURL: fileURL || null,
                   fileName: fileName || null,
-                  createdAt: new Date().toISOString()
+                  createdAt: batchTimestamp
                 });
               } catch (error) {
                 handleFirestoreError(error, OperationType.CREATE, 'quotations');

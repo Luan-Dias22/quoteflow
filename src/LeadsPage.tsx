@@ -74,7 +74,13 @@ export default function LeadsPage() {
             id: doc.id,
             ...data,
             // Ensure createdAt is a string or handle timestamp
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString())
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+            name: data.name || 'Sem nome',
+            email: data.email || 'Sem e-mail',
+            phone: data.phone || 'Sem telefone',
+            message: data.message || '',
+            source: data.source || 'Desconhecida',
+            status: data.status || 'Novo Pedido'
           };
         }) as Lead[];
         
@@ -130,9 +136,9 @@ export default function LeadsPage() {
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = 
-      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.phone.includes(searchTerm);
+      (lead.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.phone || '').includes(searchTerm);
     
     const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
     
@@ -209,10 +215,9 @@ export default function LeadsPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="all">Todos</option>
-                <option value="Novo">Novo</option>
-                <option value="Em Contato">Em Contato</option>
-                <option value="Convertido">Convertido</option>
-                <option value="Perdido">Perdido</option>
+                <option value="Novo Pedido">Novo Pedido</option>
+                <option value="Pedido Lançado">Pedido Lançado</option>
+                <option value="Pedido Concluído">Pedido Concluído</option>
               </select>
             </div>
           </div>
@@ -281,15 +286,13 @@ export default function LeadsPage() {
                     <td className="px-6 py-4">
                       <span className={cn(
                         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
-                        lead.status === 'Novo' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                        lead.status === 'Em Contato' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-                        lead.status === 'Convertido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-                        lead.status === 'Perdido' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        lead.status === 'Novo Pedido' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                        lead.status === 'Pedido Lançado' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+                        lead.status === 'Pedido Concluído' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                       )}>
-                        {lead.status === 'Novo' && <Clock size={12} />}
-                        {lead.status === 'Em Contato' && <MessageSquare size={12} />}
-                        {lead.status === 'Convertido' && <CheckCircle2 size={12} />}
-                        {lead.status === 'Perdido' && <XCircle size={12} />}
+                        {lead.status === 'Novo Pedido' && <Clock size={12} />}
+                        {lead.status === 'Pedido Lançado' && <MessageSquare size={12} />}
+                        {lead.status === 'Pedido Concluído' && <CheckCircle2 size={12} />}
                         {lead.status}
                       </span>
                     </td>
@@ -300,10 +303,9 @@ export default function LeadsPage() {
                           value={lead.status}
                           onChange={(e) => handleUpdateStatus(lead.id!, e.target.value as Lead['status'])}
                         >
-                          <option value="Novo">Marcar Novo</option>
-                          <option value="Em Contato">Marcar Em Contato</option>
-                          <option value="Convertido">Marcar Convertido</option>
-                          <option value="Perdido">Marcar Perdido</option>
+                          <option value="Novo Pedido">Marcar Novo Pedido</option>
+                          <option value="Pedido Lançado">Marcar Pedido Lançado</option>
+                          <option value="Pedido Concluído">Marcar Pedido Concluído</option>
                         </select>
                         <Button 
                           variant="ghost" 

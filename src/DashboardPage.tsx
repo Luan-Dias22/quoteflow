@@ -6,7 +6,8 @@ import {
   TrendingUp, 
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  BarChart3
 } from 'lucide-react';
 import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
@@ -23,7 +24,9 @@ export default function DashboardPage() {
     suppliers: 0,
     tools: 0,
     quotations: 0,
-    responseRate: 0
+    quotations7Days: 0,
+    responseRate7Days: 0,
+    negotiationRate7Days: 0
   });
   const [recentQuotations, setRecentQuotations] = useState<Quotation[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
@@ -40,13 +43,31 @@ export default function DashboardPage() {
         const quotationsSnap = await getDocs(query(collection(db, 'quotations'), where('userId', '==', user.uid)));
 
         const quotations = quotationsSnap.docs.map(doc => doc.data() as Quotation);
-        const responded = quotations.filter(q => q.status === 'Respondido').length;
+        
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const quotations7Days = quotations.filter(q => {
+          try {
+            const date = new Date(q.createdAt);
+            return date >= sevenDaysAgo;
+          } catch {
+            return false;
+          }
+        });
+
+        const total7Days = quotations7Days.length;
+        const responded7Days = quotations7Days.filter(q => q.status === 'Respondido' || q.status === 'Negociando').length;
+        const negotiating7Days = quotations7Days.filter(q => q.status === 'Negociando').length;
 
         setStats({
           suppliers: suppliersSnap.size,
           tools: toolsSnap.size,
           quotations: quotationsSnap.size,
-          responseRate: quotationsSnap.size > 0 ? Math.round((responded / quotationsSnap.size) * 100) : 0
+          quotations7Days: total7Days,
+          responseRate7Days: total7Days > 0 ? Math.round((responded7Days / total7Days) * 100) : 0,
+          negotiationRate7Days: total7Days > 0 ? Math.round((negotiating7Days / total7Days) * 100) : 0
         });
 
         // Recent quotations
@@ -102,8 +123,10 @@ export default function DashboardPage() {
   const statCards = [
     { label: 'Total Fornecedores', value: stats.suppliers, icon: Users, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { label: 'Total Ferramentas', value: stats.tools, icon: Wrench, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-    { label: 'Cotações Enviadas', value: stats.quotations, icon: MessageSquare, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-    { label: 'Taxa de Resposta', value: `${stats.responseRate}%`, icon: TrendingUp, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+    { label: 'Cotações (Total)', value: stats.quotations, icon: MessageSquare, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+    { label: 'Cotações (7 dias)', value: stats.quotations7Days, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { label: 'Taxa Resposta (7d)', value: `${stats.responseRate7Days}%`, icon: TrendingUp, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+    { label: 'Taxa Negociação (7d)', value: `${stats.negotiationRate7Days}%`, icon: BarChart3, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
   ];
 
   if (loading) {
@@ -120,7 +143,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Stats Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat, i) => (
           <Card key={i} className="p-6 transition-all hover:shadow-md">
             <div className="flex items-center gap-4">

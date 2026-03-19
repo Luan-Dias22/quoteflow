@@ -61,6 +61,6 @@ export interface Lead {
   phone: string;
   message: string;
   source: string;
-  status: 'Novo' | 'Em Contato' | 'Convertido' | 'Perdido';
+  status: 'Novo Pedido' | 'Pedido Lançado' | 'Pedido Concluído';
   createdAt: string;
 }

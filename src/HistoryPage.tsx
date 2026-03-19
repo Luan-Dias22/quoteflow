@@ -24,7 +24,7 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebas
 import { db, storage } from './firebase';
 import { useAuth } from './contexts/AuthContext';
 import { Button, Input, Card, Modal } from './components/UI';
-import { Quotation, Supplier } from './types';
+import { Quotation, Supplier, QuotationItem } from './types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from './lib/utils';
@@ -45,6 +45,7 @@ export default function HistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [viewingQuotation, setViewingQuotation] = useState<any | null>(null);
 
   const fetchData = async () => {
     if (!user) return;
@@ -77,6 +78,10 @@ export default function HistoryPage() {
   const getSupplierName = (phone: string) => {
     const supplier = suppliers.find(s => s.whatsapp === phone);
     return supplier ? `${supplier.name} (${supplier.company})` : phone;
+  };
+
+  const getSupplier = (phone: string) => {
+    return suppliers.find(s => s.whatsapp === phone);
   };
 
   const handleFileUpload = async (id: string, file: File) => {
@@ -144,29 +149,93 @@ export default function HistoryPage() {
     }
   };
 
-  const handleUpdateStatus = async (id: string, status: Quotation['status']) => {
-    const path = `quotations/${id}`;
+  const handleUpdateStatus = async (id: string, status: Quotation['status'], quotes?: Quotation[]) => {
     try {
-      await updateDoc(doc(db, 'quotations', id), { status });
-      setQuotations(prev => prev.map(q => q.id === id ? { ...q, status } : q));
+      if (quotes && quotes.length > 1) {
+        // Update all quotes in the group
+        await Promise.all(quotes.map(q => updateDoc(doc(db, 'quotations', q.id!), { status })));
+        setQuotations(prev => prev.map(q => quotes.some(gq => gq.id === q.id) ? { ...q, status } : q));
+      } else {
+        await updateDoc(doc(db, 'quotations', id), { status });
+        setQuotations(prev => prev.map(q => q.id === id ? { ...q, status } : q));
+      }
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, path);
+      handleFirestoreError(error, OperationType.UPDATE, `quotations/${id}`);
     }
   };
 
-  const handleDeleteQuotation = async (id: string) => {
+  const handleDeleteQuotation = async (id: string, quotes?: Quotation[]) => {
     if (!user) return;
     setDeletingId(id);
-    const path = `quotations/${id}`;
     try {
-      await deleteDoc(doc(db, 'quotations', id));
-      setQuotations(prev => prev.filter(q => q.id !== id));
+      if (quotes && quotes.length > 1) {
+        // Delete all quotes in the group
+        await Promise.all(quotes.map(q => deleteDoc(doc(db, 'quotations', q.id!))));
+        setQuotations(prev => prev.filter(q => !quotes.some(gq => gq.id === q.id)));
+      } else {
+        await deleteDoc(doc(db, 'quotations', id));
+        setQuotations(prev => prev.filter(q => q.id !== id));
+      }
       setConfirmDelete(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, path);
+      handleFirestoreError(error, OperationType.DELETE, `quotations/${id}`);
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const getQuotationGroups = (quotes: Quotation[]) => {
+    const groups: { [key: string]: Quotation[] } = {};
+    
+    quotes.forEach(q => {
+      const contact = q.contacts[0] || 'Desconhecido';
+      // Truncate to minute for grouping "at the same time"
+      const minute = q.createdAt.substring(0, 16); 
+      const key = `${contact}_${minute}`;
+      
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(q);
+    });
+    
+    return Object.values(groups).map(groupQuotes => {
+      const sorted = [...groupQuotes].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      const first = sorted[0];
+      const allItems: QuotationItem[] = [];
+      
+      sorted.forEach(q => {
+        if (q.items) {
+          allItems.push(...q.items);
+        } else if (q.toolId && q.toolName) {
+          allItems.push({
+            toolId: q.toolId,
+            toolName: q.toolName,
+            quantity: q.quantity || 1
+          });
+        }
+      });
+      
+      // Deduplicate items if necessary (same toolId)
+      const mergedItems = allItems.reduce((acc, item) => {
+        const existing = acc.find(i => i.toolId === item.toolId);
+        if (existing) {
+          existing.quantity += item.quantity;
+        } else {
+          acc.push({ ...item });
+        }
+        return acc;
+      }, [] as QuotationItem[]);
+
+      return {
+        ...first,
+        id: first.id,
+        quotes: sorted,
+        items: mergedItems,
+        isGroup: sorted.length > 1
+      };
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   };
 
   const filteredQuotations = quotations.filter(q => {
@@ -176,12 +245,14 @@ export default function HistoryPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const groupedQuotations = filteredQuotations.reduce((acc, q) => {
-    const contact = q.contacts[0] || 'Desconhecido';
+  const quotationGroups = getQuotationGroups(filteredQuotations);
+
+  const groupedQuotations = quotationGroups.reduce((acc, g) => {
+    const contact = g.contacts[0] || 'Desconhecido';
     if (!acc[contact]) acc[contact] = [];
-    acc[contact].push(q);
+    acc[contact].push(g);
     return acc;
-  }, {} as { [contact: string]: Quotation[] });
+  }, {} as { [contact: string]: any[] });
 
   const sortedContacts = Object.keys(groupedQuotations).sort((a, b) => {
     const nameA = getSupplierName(a);
@@ -262,10 +333,10 @@ export default function HistoryPage() {
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#0EA5E9]" />
                   </td>
                 </tr>
-              ) : filteredQuotations.length > 0 ? (
+              ) : (quotationGroups.length > 0 || filteredQuotations.length > 0) ? (
                 groupBySupplier ? (
                   sortedContacts.map(contact => {
-                    const supplierQuotes = groupedQuotations[contact];
+                    const supplierGroups = groupedQuotations[contact];
                     const isExpanded = expandedSuppliers.includes(contact);
                     const supplierName = getSupplierName(contact);
 
@@ -286,59 +357,53 @@ export default function HistoryPage() {
                               <User size={16} className="text-[#0EA5E9]" />
                               <span className="font-bold text-gray-900 dark:text-white">{supplierName}</span>
                               <span className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-[#0EA5E9] px-2 py-0.5 rounded-full font-bold">
-                                {supplierQuotes.length} {supplierQuotes.length === 1 ? 'cotação' : 'cotações'}
+                                {supplierGroups.length} {supplierGroups.length === 1 ? 'grupo' : 'grupos'}
                               </span>
                             </div>
                           </td>
                         </tr>
-                        {isExpanded && supplierQuotes.map((q) => (
-                          <tr key={q.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors animate-in slide-in-from-top-1 duration-200">
+                        {isExpanded && supplierGroups.map((g) => (
+                          <tr key={g.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors animate-in slide-in-from-top-1 duration-200">
                             <td className="px-6 py-4"></td>
                             <td className="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-slate-400">
-                              {format(new Date(q.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                              {format(new Date(g.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                             </td>
                             <td className="px-6 py-4">
-                              {q.items ? (
-                                <div className="space-y-1">
+                              <div className="space-y-1">
+                                {g.isGroup ? (
+                                  <div className="font-bold text-[#0EA5E9] text-xs mb-1 uppercase tracking-wider">Cotação em Lote</div>
+                                ) : g.items && g.items.length > 1 ? (
                                   <div className="font-bold text-[#0EA5E9] text-xs mb-1 uppercase tracking-wider">Cotação Conjunta</div>
-                                  {q.items.map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
-                                      <span className="font-bold bg-gray-100 dark:bg-slate-800 px-1 rounded">{item.quantity}x</span>
-                                      <span className="truncate max-w-[150px]">{item.toolName}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <>
-                                  <div className="font-semibold text-gray-900 dark:text-white">{q.toolName}</div>
-                                  {q.quantity && (
-                                    <div className="text-[10px] font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded inline-block mt-1">
-                                      Qtd: {q.quantity}
-                                    </div>
-                                  )}
-                                </>
-                              )}
+                                ) : null}
+                                
+                                {g.items.map((item: any, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
+                                    <span className="font-bold bg-gray-100 dark:bg-slate-800 px-1 rounded">{item.quantity}x</span>
+                                    <span className="truncate max-w-[150px]">{item.toolName}</span>
+                                  </div>
+                                ))}
+                              </div>
                             </td>
                             <td className="px-6 py-4 max-w-[250px]">
-                              <p className="truncate text-gray-500 dark:text-slate-500 italic">"{q.message}"</p>
+                              <p className="truncate text-gray-500 dark:text-slate-500 italic">"{g.message}"</p>
                             </td>
                             <td className="px-6 py-4">
-                              {q.fileURL ? (
+                              {g.fileURL ? (
                                 <div className="flex items-center gap-1">
                                   <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50">
                                     <Paperclip size={14} className="text-[#0EA5E9]" />
-                                    <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{q.fileName || 'Arquivo'}</span>
+                                    <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{g.fileName || 'Arquivo'}</span>
                                     <div className="flex items-center border-l border-blue-200 dark:border-blue-900/50 ml-1 pl-1 gap-1">
                                       <button 
-                                        onClick={() => setPreviewFile({ url: q.fileURL!, name: q.fileName || 'Cotação' })}
+                                        onClick={() => setPreviewFile({ url: g.fileURL!, name: g.fileName || 'Cotação' })}
                                         className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
                                         title="Visualizar"
                                       >
                                         <Eye size={12} />
                                       </button>
                                       <a 
-                                        href={q.fileURL} 
-                                        download={q.fileName}
+                                        href={g.fileURL} 
+                                        download={g.fileName}
                                         target="_blank" 
                                         rel="noopener noreferrer"
                                         className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
@@ -352,7 +417,7 @@ export default function HistoryPage() {
                                     variant="ghost" 
                                     size="sm" 
                                     className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
-                                    onClick={() => handleRemoveFile(q.id!)}
+                                    onClick={() => handleRemoveFile(g.id!)}
                                     title="Remover anexo"
                                   >
                                     <X size={12} />
@@ -362,22 +427,22 @@ export default function HistoryPage() {
                                 <div className="relative">
                                   <input 
                                     type="file" 
-                                    id={`file-${q.id}`}
+                                    id={`file-${g.id}`}
                                     className="hidden"
                                     accept=".pdf,.xlsx,.xls,.doc,.docx,image/*"
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
-                                      if (file) handleFileUpload(q.id!, file);
+                                      if (file) handleFileUpload(g.id!, file);
                                     }}
                                   />
                                   <Button 
                                     variant="ghost" 
                                     size="sm" 
                                     className="h-8 text-gray-400 dark:text-slate-500 hover:text-[#0EA5E9] gap-1.5 text-[10px] relative overflow-hidden"
-                                    onClick={() => document.getElementById(`file-${q.id}`)?.click()}
-                                    disabled={uploadingId === q.id}
+                                    onClick={() => document.getElementById(`file-${g.id}`)?.click()}
+                                    disabled={uploadingId === g.id}
                                   >
-                                    {uploadingId === q.id ? (
+                                    {uploadingId === g.id ? (
                                       <>
                                         <div 
                                           className="absolute inset-0 bg-blue-50 dark:bg-blue-900/30 transition-all duration-300" 
@@ -399,22 +464,31 @@ export default function HistoryPage() {
                             <td className="px-6 py-4">
                               <span className={cn(
                                 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
-                                q.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                                q.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-                                q.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                                g.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                                g.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                                g.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
                               )}>
-                                {q.status === 'Enviado' && <Clock size={12} />}
-                                {q.status === 'Respondido' && <CheckCircle2 size={12} />}
-                                {q.status === 'Negociando' && <MessageSquare size={12} />}
-                                {q.status}
+                                {g.status === 'Enviado' && <Clock size={12} />}
+                                {g.status === 'Respondido' && <CheckCircle2 size={12} />}
+                                {g.status === 'Negociando' && <MessageSquare size={12} />}
+                                {g.status}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">
                               <div className="flex items-center justify-end gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 text-[#0EA5E9] hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                  onClick={() => setViewingQuotation(g)}
+                                  title="Ver detalhes"
+                                >
+                                  <Eye size={14} />
+                                </Button>
                                 <select 
                                   className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                                  value={q.status}
-                                  onChange={(e) => handleUpdateStatus(q.id!, e.target.value as Quotation['status'])}
+                                  value={g.status}
+                                  onChange={(e) => handleUpdateStatus(g.id!, e.target.value as Quotation['status'], g.quotes)}
                                 >
                                   <option value="Enviado">Marcar Enviado</option>
                                   <option value="Respondido">Marcar Respondido</option>
@@ -424,10 +498,10 @@ export default function HistoryPage() {
                                   variant="ghost" 
                                   size="sm" 
                                   className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
-                                  onClick={() => setConfirmDelete(q.id!)}
-                                  disabled={deletingId === q.id}
+                                  onClick={() => setConfirmDelete(g.id!)}
+                                  disabled={deletingId === g.id}
                                 >
-                                  {deletingId === q.id ? (
+                                  {deletingId === g.id ? (
                                     <Loader2 size={14} className="animate-spin" />
                                   ) : (
                                     <Trash2 size={14} />
@@ -441,54 +515,48 @@ export default function HistoryPage() {
                     );
                   })
                 ) : (
-                  filteredQuotations.map((q) => (
-                    <tr key={q.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                  quotationGroups.map((g) => (
+                    <tr key={g.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4"></td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-slate-400">
-                        {format(new Date(q.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        {format(new Date(g.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                       </td>
                       <td className="px-6 py-4">
-                        {q.items ? (
-                          <div className="space-y-1">
+                        <div className="space-y-1">
+                          {g.isGroup ? (
+                            <div className="font-bold text-[#0EA5E9] text-xs mb-1 uppercase tracking-wider">Cotação em Lote</div>
+                          ) : g.items && g.items.length > 1 ? (
                             <div className="font-bold text-[#0EA5E9] text-xs mb-1 uppercase tracking-wider">Cotação Conjunta</div>
-                            {q.items.map((item, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
-                                <span className="font-bold bg-gray-100 dark:bg-slate-800 px-1 rounded">{item.quantity}x</span>
-                                <span className="truncate max-w-[150px]">{item.toolName}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <>
-                            <div className="font-semibold text-gray-900 dark:text-white">{q.toolName}</div>
-                            {q.quantity && (
-                              <div className="text-[10px] font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded inline-block mt-1">
-                                Qtd: {q.quantity}
-                              </div>
-                            )}
-                          </>
-                        )}
+                          ) : null}
+                          
+                          {g.items.map((item: any, idx: number) => (
+                            <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
+                              <span className="font-bold bg-gray-100 dark:bg-slate-800 px-1 rounded">{item.quantity}x</span>
+                              <span className="truncate max-w-[150px]">{item.toolName}</span>
+                            </div>
+                          ))}
+                        </div>
                       </td>
                       <td className="px-6 py-4 max-w-[250px]">
-                        <p className="truncate text-gray-500 dark:text-slate-500 italic">"{q.message}"</p>
+                        <p className="truncate text-gray-500 dark:text-slate-500 italic">"{g.message}"</p>
                       </td>
                       <td className="px-6 py-4">
-                        {q.fileURL ? (
+                        {g.fileURL ? (
                           <div className="flex items-center gap-1">
                             <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50">
                               <Paperclip size={14} className="text-[#0EA5E9]" />
-                              <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{q.fileName || 'Arquivo'}</span>
+                              <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{g.fileName || 'Arquivo'}</span>
                               <div className="flex items-center border-l border-blue-200 dark:border-blue-900/50 ml-1 pl-1 gap-1">
                                 <button 
-                                  onClick={() => setPreviewFile({ url: q.fileURL!, name: q.fileName || 'Cotação' })}
+                                  onClick={() => setPreviewFile({ url: g.fileURL!, name: g.fileName || 'Cotação' })}
                                   className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
                                   title="Visualizar"
                                 >
                                   <Eye size={12} />
                                 </button>
                                 <a 
-                                  href={q.fileURL} 
-                                  download={q.fileName}
+                                  href={g.fileURL} 
+                                  download={g.fileName}
                                   target="_blank" 
                                   rel="noopener noreferrer"
                                   className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
@@ -502,7 +570,7 @@ export default function HistoryPage() {
                               variant="ghost" 
                               size="sm" 
                               className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
-                              onClick={() => handleRemoveFile(q.id!)}
+                              onClick={() => handleRemoveFile(g.id!)}
                               title="Remover anexo"
                             >
                               <X size={12} />
@@ -512,22 +580,22 @@ export default function HistoryPage() {
                           <div className="relative">
                             <input 
                               type="file" 
-                              id={`file-flat-${q.id}`}
+                              id={`file-flat-${g.id}`}
                               className="hidden"
                               accept=".pdf,.xlsx,.xls,.doc,.docx,image/*"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                if (file) handleFileUpload(q.id!, file);
+                                if (file) handleFileUpload(g.id!, file);
                               }}
                             />
                             <Button 
                               variant="ghost" 
                               size="sm" 
                               className="h-8 text-gray-400 dark:text-slate-500 hover:text-[#0EA5E9] gap-1.5 text-[10px] relative overflow-hidden"
-                              onClick={() => document.getElementById(`file-flat-${q.id}`)?.click()}
-                              disabled={uploadingId === q.id}
+                              onClick={() => document.getElementById(`file-flat-${g.id}`)?.click()}
+                              disabled={uploadingId === g.id}
                             >
-                              {uploadingId === q.id ? (
+                              {uploadingId === g.id ? (
                                 <>
                                   <div 
                                     className="absolute inset-0 bg-blue-50 dark:bg-blue-900/30 transition-all duration-300" 
@@ -549,22 +617,31 @@ export default function HistoryPage() {
                       <td className="px-6 py-4">
                         <span className={cn(
                           'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
-                          q.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                          q.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-                          q.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                          g.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                          g.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                          g.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
                         )}>
-                          {q.status === 'Enviado' && <Clock size={12} />}
-                          {q.status === 'Respondido' && <CheckCircle2 size={12} />}
-                          {q.status === 'Negociando' && <MessageSquare size={12} />}
-                          {q.status}
+                          {g.status === 'Enviado' && <Clock size={12} />}
+                          {g.status === 'Respondido' && <CheckCircle2 size={12} />}
+                          {g.status === 'Negociando' && <MessageSquare size={12} />}
+                          {g.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-[#0EA5E9] hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                            onClick={() => setViewingQuotation(g)}
+                            title="Ver detalhes"
+                          >
+                            <Eye size={14} />
+                          </Button>
                           <select 
                             className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                            value={q.status}
-                            onChange={(e) => handleUpdateStatus(q.id!, e.target.value as Quotation['status'])}
+                            value={g.status}
+                            onChange={(e) => handleUpdateStatus(g.id!, e.target.value as Quotation['status'], g.quotes)}
                           >
                             <option value="Enviado">Marcar Enviado</option>
                             <option value="Respondido">Marcar Respondido</option>
@@ -574,10 +651,10 @@ export default function HistoryPage() {
                             variant="ghost" 
                             size="sm" 
                             className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
-                            onClick={() => setConfirmDelete(q.id!)}
-                            disabled={deletingId === q.id}
+                            onClick={() => setConfirmDelete(g.id!)}
+                            disabled={deletingId === g.id}
                           >
-                            {deletingId === q.id ? (
+                            {deletingId === g.id ? (
                               <Loader2 size={14} className="animate-spin" />
                             ) : (
                               <Trash2 size={14} />
@@ -665,13 +742,181 @@ export default function HistoryPage() {
             </Button>
             <Button 
               variant="danger" 
-              onClick={() => confirmDelete && handleDeleteQuotation(confirmDelete)}
+              onClick={() => confirmDelete && handleDeleteQuotation(confirmDelete, quotationGroups.find(g => g.id === confirmDelete)?.quotes)}
               disabled={!!deletingId}
             >
               {deletingId ? <Loader2 size={18} className="animate-spin" /> : 'Excluir'}
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Quotation Details Modal */}
+      <Modal
+        isOpen={!!viewingQuotation}
+        onClose={() => setViewingQuotation(null)}
+        title={viewingQuotation?.isGroup ? "Detalhes da Cotação em Lote" : "Detalhes da Cotação"}
+        size="lg"
+      >
+        {viewingQuotation && (
+          <div className="space-y-6">
+            {viewingQuotation.isGroup && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-800/30 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-[#0EA5E9] text-white flex items-center justify-center font-bold text-xs">
+                  {viewingQuotation.quotes.length}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#0EA5E9]">Cotação em Lote</p>
+                  <p className="text-xs text-blue-600/70 dark:text-blue-400/70">Esta visualização agrupa {viewingQuotation.quotes.length} solicitações feitas simultaneamente.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2">Informações Gerais</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-slate-400">Data:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {format(new Date(viewingQuotation.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-slate-400">Status:</span>
+                      <span className={cn(
+                        'font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-full',
+                        viewingQuotation.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                        viewingQuotation.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                        viewingQuotation.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                      )}>
+                        {viewingQuotation.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2">Fornecedor</h4>
+                  {(() => {
+                    const supplier = getSupplier(viewingQuotation.contacts[0]);
+                    return supplier ? (
+                      <div className="p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-800">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="h-10 w-10 rounded-full bg-[#0EA5E9]/10 flex items-center justify-center text-[#0EA5E9]">
+                            <User size={20} />
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-900 dark:text-white">{supplier.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">{supplier.company}</div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="text-sm text-gray-600 dark:text-slate-400 flex items-center gap-2">
+                            <MessageSquare size={14} className="text-emerald-500" />
+                            <span className="font-medium">{supplier.whatsapp}</span>
+                          </div>
+                          {supplier.email && (
+                            <div className="text-sm text-gray-600 dark:text-slate-400 flex items-center gap-2">
+                              <AlertCircle size={14} className="text-blue-500" />
+                              <span>{supplier.email}</span>
+                            </div>
+                          )}
+                          {supplier.phone && (
+                            <div className="text-sm text-gray-600 dark:text-slate-400 flex items-center gap-2">
+                              <Clock size={14} className="text-purple-500" />
+                              <span>{supplier.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-800 text-sm italic text-gray-500">
+                        Contato: {viewingQuotation.contacts[0]} (Fornecedor não cadastrado)
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2">Itens da Cotação</h4>
+                  <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                    {viewingQuotation.items ? (
+                      viewingQuotation.items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50 dark:bg-slate-800/50 rounded-xl text-sm border border-gray-100 dark:border-slate-800">
+                          <span className="text-gray-900 dark:text-white font-medium">{item.toolName}</span>
+                          <span className="font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-lg">
+                            {item.quantity}x
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex justify-between items-center p-2.5 bg-gray-50 dark:bg-slate-800/50 rounded-xl text-sm border border-gray-100 dark:border-slate-800">
+                        <span className="text-gray-900 dark:text-white font-medium">{viewingQuotation.toolName}</span>
+                        <span className="font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-lg">
+                          {viewingQuotation.quantity}x
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {viewingQuotation.fileURL && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2">Anexo</h4>
+                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                      <div className="flex items-center gap-3">
+                        <Paperclip size={18} className="text-[#0EA5E9]" />
+                        <div className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[150px]">
+                          {viewingQuotation.fileName || 'Arquivo de Cotação'}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                          onClick={() => {
+                            setViewingQuotation(null);
+                            setPreviewFile({ url: viewingQuotation.fileURL!, name: viewingQuotation.fileName || 'Cotação' });
+                          }}
+                        >
+                          <Eye size={16} />
+                        </Button>
+                        <a 
+                          href={viewingQuotation.fileURL} 
+                          download={viewingQuotation.fileName}
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                        >
+                          <Download size={16} />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2">Mensagem Enviada</h4>
+              <div className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-800 text-sm text-gray-600 dark:text-slate-400 italic whitespace-pre-wrap">
+                "{viewingQuotation.message}"
+              </div>
+              {viewingQuotation.isGroup && viewingQuotation.quotes.some((q: any) => q.message !== viewingQuotation.message) && (
+                <p className="mt-2 text-[10px] text-gray-400 italic">* Algumas mensagens no grupo podem variar.</p>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-slate-800">
+              <Button onClick={() => setViewingQuotation(null)}>
+                Fechar
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
