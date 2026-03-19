@@ -15,14 +15,16 @@ import {
   X,
   Paperclip,
   Eye,
-  Trash2
+  Trash2,
+  User,
+  ChevronRight
 } from 'lucide-react';
 import { collection, query, where, getDocs, updateDoc, doc, orderBy, deleteField, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './firebase';
 import { useAuth } from './contexts/AuthContext';
 import { Button, Input, Card, Modal } from './components/UI';
-import { Quotation } from './types';
+import { Quotation, Supplier } from './types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from './lib/utils';
@@ -31,56 +33,63 @@ import { handleFirestoreError, OperationType } from './lib/firestore-errors';
 export default function HistoryPage() {
   const { user } = useAuth();
   const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [groupBySupplier, setGroupBySupplier] = useState(true);
+  const [expandedSuppliers, setExpandedSuppliers] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<{ url: string, name: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const fetchHistory = async () => {
+  const fetchData = async () => {
     if (!user) return;
     setLoading(true);
     try {
       const q = query(collection(db, 'quotations'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
+      const sQ = query(collection(db, 'suppliers'), where('userId', '==', user.uid));
+      
+      const [snap, sSnap] = await Promise.all([getDocs(q), getDocs(sQ)]);
+      
       setQuotations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quotation)));
+      setSuppliers(sSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier)));
     } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, 'quotations');
+      handleFirestoreError(error, OperationType.LIST, 'quotations/suppliers');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchHistory();
+    fetchData();
   }, [user]);
 
-  const handleUpdateStatus = async (id: string, status: Quotation['status']) => {
-    const path = `quotations/${id}`;
-    try {
-      await updateDoc(doc(db, 'quotations', id), { status });
-      setQuotations(prev => prev.map(q => q.id === id ? { ...q, status } : q));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, path);
-    }
+  const toggleSupplierExpansion = (phone: string) => {
+    setExpandedSuppliers(prev => 
+      prev.includes(phone) ? prev.filter(p => p !== phone) : [...prev, phone]
+    );
+  };
+
+  const getSupplierName = (phone: string) => {
+    const supplier = suppliers.find(s => s.whatsapp === phone);
+    return supplier ? `${supplier.name} (${supplier.company})` : phone;
   };
 
   const handleFileUpload = async (id: string, file: File) => {
     if (!user) return;
     
-    // Limit file size to 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      setError('O arquivo é muito grande. O limite é de 5MB.');
+    // Limit file size to 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      setError('O arquivo é muito grande. O limite é de 10MB.');
       return;
     }
 
     setUploadingId(id);
     setUploadProgress(0);
-    const path = `quotations/${id}`;
     
     try {
       const storageRef = ref(storage, `quotations/${user.uid}/${id}/${file.name}`);
@@ -117,7 +126,7 @@ export default function HistoryPage() {
       );
     } catch (error) {
       console.error('Error initiating upload:', error);
-      handleFirestoreError(error, OperationType.UPDATE, path);
+      handleFirestoreError(error, OperationType.UPDATE, `quotations/${id}`);
       setUploadingId(null);
     }
   };
@@ -135,21 +144,22 @@ export default function HistoryPage() {
     }
   };
 
+  const handleUpdateStatus = async (id: string, status: Quotation['status']) => {
+    const path = `quotations/${id}`;
+    try {
+      await updateDoc(doc(db, 'quotations', id), { status });
+      setQuotations(prev => prev.map(q => q.id === id ? { ...q, status } : q));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  };
+
   const handleDeleteQuotation = async (id: string) => {
     if (!user) return;
     setDeletingId(id);
     const path = `quotations/${id}`;
     try {
-      // Find the quotation to check for files
-      const quotation = quotations.find(q => q.id === id);
-      
-      // Delete from Firestore
       await deleteDoc(doc(db, 'quotations', id));
-      
-      // If there was a file, we should ideally delete it from storage too
-      // Note: In a real app, you'd want to track the storage path specifically
-      // but here we can try to delete if we have the URL or just let it be if it's complex
-      
       setQuotations(prev => prev.filter(q => q.id !== id));
       setConfirmDelete(null);
     } catch (error) {
@@ -160,9 +170,23 @@ export default function HistoryPage() {
   };
 
   const filteredQuotations = quotations.filter(q => {
-    const matchesSearch = q.toolName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = q.toolName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (q.items?.some(item => item.toolName.toLowerCase().includes(searchTerm.toLowerCase())) ?? false);
     const matchesStatus = statusFilter === 'all' || q.status === statusFilter;
     return matchesSearch && matchesStatus;
+  });
+
+  const groupedQuotations = filteredQuotations.reduce((acc, q) => {
+    const contact = q.contacts[0] || 'Desconhecido';
+    if (!acc[contact]) acc[contact] = [];
+    acc[contact].push(q);
+    return acc;
+  }, {} as { [contact: string]: Quotation[] });
+
+  const sortedContacts = Object.keys(groupedQuotations).sort((a, b) => {
+    const nameA = getSupplierName(a);
+    const nameB = getSupplierName(b);
+    return nameA.localeCompare(nameB);
   });
 
   return (
@@ -193,6 +217,18 @@ export default function HistoryPage() {
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              className="sr-only peer" 
+              checked={groupBySupplier}
+              onChange={(e) => setGroupBySupplier(e.target.checked)}
+            />
+            <div className="w-11 h-6 bg-gray-200 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0EA5E9]"></div>
+            <span className="ml-3 text-sm font-medium text-gray-700 dark:text-slate-400">Agrupar por Fornecedor</span>
+          </label>
+        </div>
       </div>
 
       {error && (
@@ -210,9 +246,9 @@ export default function HistoryPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-slate-800 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                 <tr>
+                  <th className="px-6 py-4 w-10"></th>
                   <th className="px-6 py-4">Data</th>
-                  <th className="px-6 py-4">Ferramenta</th>
-                  <th className="px-6 py-4">Contatos</th>
+                  <th className="px-6 py-4">Itens</th>
                   <th className="px-6 py-4">Mensagem</th>
                   <th className="px-6 py-4">Anexo</th>
                   <th className="px-6 py-4">Status</th>
@@ -222,159 +258,339 @@ export default function HistoryPage() {
             <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center">
+                  <td colSpan={7} className="px-6 py-10 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#0EA5E9]" />
                   </td>
                 </tr>
               ) : filteredQuotations.length > 0 ? (
-                filteredQuotations.map((q) => (
-                  <tr key={q.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-slate-400">
-                      {format(new Date(q.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900 dark:text-white">{q.toolName}</div>
-                      {q.quantity && (
-                        <div className="text-[10px] font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded inline-block mt-1">
-                          Qtd: {q.quantity}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex -space-x-2 overflow-hidden">
-                        {q.contacts.slice(0, 3).map((c, i) => (
-                          <div key={i} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-[#0EA5E9] border-2 border-white dark:border-slate-900 text-[10px] font-bold">
-                            {c.slice(-2)}
-                          </div>
+                groupBySupplier ? (
+                  sortedContacts.map(contact => {
+                    const supplierQuotes = groupedQuotations[contact];
+                    const isExpanded = expandedSuppliers.includes(contact);
+                    const supplierName = getSupplierName(contact);
+
+                    return (
+                      <React.Fragment key={contact}>
+                        <tr 
+                          className="bg-gray-50/80 dark:bg-slate-800/40 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-colors"
+                          onClick={() => toggleSupplierExpansion(contact)}
+                        >
+                          <td className="px-6 py-3">
+                            <ChevronRight 
+                              size={18} 
+                              className={cn("text-gray-400 transition-transform", isExpanded && "rotate-90")} 
+                            />
+                          </td>
+                          <td colSpan={6} className="px-6 py-3">
+                            <div className="flex items-center gap-2">
+                              <User size={16} className="text-[#0EA5E9]" />
+                              <span className="font-bold text-gray-900 dark:text-white">{supplierName}</span>
+                              <span className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-[#0EA5E9] px-2 py-0.5 rounded-full font-bold">
+                                {supplierQuotes.length} {supplierQuotes.length === 1 ? 'cotação' : 'cotações'}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && supplierQuotes.map((q) => (
+                          <tr key={q.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors animate-in slide-in-from-top-1 duration-200">
+                            <td className="px-6 py-4"></td>
+                            <td className="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-slate-400">
+                              {format(new Date(q.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            </td>
+                            <td className="px-6 py-4">
+                              {q.items ? (
+                                <div className="space-y-1">
+                                  <div className="font-bold text-[#0EA5E9] text-xs mb-1 uppercase tracking-wider">Cotação Conjunta</div>
+                                  {q.items.map((item, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
+                                      <span className="font-bold bg-gray-100 dark:bg-slate-800 px-1 rounded">{item.quantity}x</span>
+                                      <span className="truncate max-w-[150px]">{item.toolName}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="font-semibold text-gray-900 dark:text-white">{q.toolName}</div>
+                                  {q.quantity && (
+                                    <div className="text-[10px] font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded inline-block mt-1">
+                                      Qtd: {q.quantity}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 max-w-[250px]">
+                              <p className="truncate text-gray-500 dark:text-slate-500 italic">"{q.message}"</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              {q.fileURL ? (
+                                <div className="flex items-center gap-1">
+                                  <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                                    <Paperclip size={14} className="text-[#0EA5E9]" />
+                                    <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{q.fileName || 'Arquivo'}</span>
+                                    <div className="flex items-center border-l border-blue-200 dark:border-blue-900/50 ml-1 pl-1 gap-1">
+                                      <button 
+                                        onClick={() => setPreviewFile({ url: q.fileURL!, name: q.fileName || 'Cotação' })}
+                                        className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
+                                        title="Visualizar"
+                                      >
+                                        <Eye size={12} />
+                                      </button>
+                                      <a 
+                                        href={q.fileURL} 
+                                        download={q.fileName}
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
+                                        title="Baixar"
+                                      >
+                                        <Download size={12} />
+                                      </a>
+                                    </div>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                    onClick={() => handleRemoveFile(q.id!)}
+                                    title="Remover anexo"
+                                  >
+                                    <X size={12} />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <input 
+                                    type="file" 
+                                    id={`file-${q.id}`}
+                                    className="hidden"
+                                    accept=".pdf,.xlsx,.xls,.doc,.docx,image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleFileUpload(q.id!, file);
+                                    }}
+                                  />
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 text-gray-400 dark:text-slate-500 hover:text-[#0EA5E9] gap-1.5 text-[10px] relative overflow-hidden"
+                                    onClick={() => document.getElementById(`file-${q.id}`)?.click()}
+                                    disabled={uploadingId === q.id}
+                                  >
+                                    {uploadingId === q.id ? (
+                                      <>
+                                        <div 
+                                          className="absolute inset-0 bg-blue-50 dark:bg-blue-900/30 transition-all duration-300" 
+                                          style={{ width: `${uploadProgress}%`, opacity: 0.5 }}
+                                        />
+                                        <Loader2 size={14} className="animate-spin relative z-10" />
+                                        <span className="relative z-10">{Math.round(uploadProgress)}%</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Paperclip size={14} />
+                                        Anexar
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={cn(
+                                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
+                                q.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                                q.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                                q.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                              )}>
+                                {q.status === 'Enviado' && <Clock size={12} />}
+                                {q.status === 'Respondido' && <CheckCircle2 size={12} />}
+                                {q.status === 'Negociando' && <MessageSquare size={12} />}
+                                {q.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <select 
+                                  className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                                  value={q.status}
+                                  onChange={(e) => handleUpdateStatus(q.id!, e.target.value as Quotation['status'])}
+                                >
+                                  <option value="Enviado">Marcar Enviado</option>
+                                  <option value="Respondido">Marcar Respondido</option>
+                                  <option value="Negociando">Marcar Negociando</option>
+                                </select>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
+                                  onClick={() => setConfirmDelete(q.id!)}
+                                  disabled={deletingId === q.id}
+                                >
+                                  {deletingId === q.id ? (
+                                    <Loader2 size={14} className="animate-spin" />
+                                  ) : (
+                                    <Trash2 size={14} />
+                                  )}
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
                         ))}
-                        {q.contacts.length > 3 && (
-                          <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-2 border-white dark:border-slate-900 text-[10px] font-bold">
-                            +{q.contacts.length - 3}
+                      </React.Fragment>
+                    );
+                  })
+                ) : (
+                  filteredQuotations.map((q) => (
+                    <tr key={q.id} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-4"></td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-slate-400">
+                        {format(new Date(q.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </td>
+                      <td className="px-6 py-4">
+                        {q.items ? (
+                          <div className="space-y-1">
+                            <div className="font-bold text-[#0EA5E9] text-xs mb-1 uppercase tracking-wider">Cotação Conjunta</div>
+                            {q.items.map((item, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
+                                <span className="font-bold bg-gray-100 dark:bg-slate-800 px-1 rounded">{item.quantity}x</span>
+                                <span className="truncate max-w-[150px]">{item.toolName}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="font-semibold text-gray-900 dark:text-white">{q.toolName}</div>
+                            {q.quantity && (
+                              <div className="text-[10px] font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded inline-block mt-1">
+                                Qtd: {q.quantity}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 max-w-[250px]">
+                        <p className="truncate text-gray-500 dark:text-slate-500 italic">"{q.message}"</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        {q.fileURL ? (
+                          <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                              <Paperclip size={14} className="text-[#0EA5E9]" />
+                              <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{q.fileName || 'Arquivo'}</span>
+                              <div className="flex items-center border-l border-blue-200 dark:border-blue-900/50 ml-1 pl-1 gap-1">
+                                <button 
+                                  onClick={() => setPreviewFile({ url: q.fileURL!, name: q.fileName || 'Cotação' })}
+                                  className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
+                                  title="Visualizar"
+                                >
+                                  <Eye size={12} />
+                                </button>
+                                <a 
+                                  href={q.fileURL} 
+                                  download={q.fileName}
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
+                                  title="Baixar"
+                                >
+                                  <Download size={12} />
+                                </a>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+                              onClick={() => handleRemoveFile(q.id!)}
+                              title="Remover anexo"
+                            >
+                              <X size={12} />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <input 
+                              type="file" 
+                              id={`file-flat-${q.id}`}
+                              className="hidden"
+                              accept=".pdf,.xlsx,.xls,.doc,.docx,image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload(q.id!, file);
+                              }}
+                            />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 text-gray-400 dark:text-slate-500 hover:text-[#0EA5E9] gap-1.5 text-[10px] relative overflow-hidden"
+                              onClick={() => document.getElementById(`file-flat-${q.id}`)?.click()}
+                              disabled={uploadingId === q.id}
+                            >
+                              {uploadingId === q.id ? (
+                                <>
+                                  <div 
+                                    className="absolute inset-0 bg-blue-50 dark:bg-blue-900/30 transition-all duration-300" 
+                                    style={{ width: `${uploadProgress}%`, opacity: 0.5 }}
+                                  />
+                                  <Loader2 size={14} className="animate-spin relative z-10" />
+                                  <span className="relative z-10">{Math.round(uploadProgress)}%</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Paperclip size={14} />
+                                  Anexar
+                                </>
+                              )}
+                            </Button>
                           </div>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 max-w-[250px]">
-                      <p className="truncate text-gray-500 dark:text-slate-500 italic">"{q.message}"</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      {q.fileURL ? (
-                        <div className="flex items-center gap-1">
-                          <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50">
-                            <FileText size={14} className="text-[#0EA5E9]" />
-                            <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{q.fileName || 'Arquivo'}</span>
-                            <div className="flex items-center border-l border-blue-200 dark:border-blue-900/50 ml-1 pl-1 gap-1">
-                              <button 
-                                onClick={() => setPreviewFile({ url: q.fileURL!, name: q.fileName || 'Cotação' })}
-                                className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
-                                title="Visualizar"
-                              >
-                                <Eye size={12} />
-                              </button>
-                              <a 
-                                href={q.fileURL} 
-                                download={q.fileName}
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
-                                title="Baixar"
-                              >
-                                <Download size={12} />
-                              </a>
-                            </div>
-                          </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={cn(
+                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
+                          q.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                          q.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                          q.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                        )}>
+                          {q.status === 'Enviado' && <Clock size={12} />}
+                          {q.status === 'Respondido' && <CheckCircle2 size={12} />}
+                          {q.status === 'Negociando' && <MessageSquare size={12} />}
+                          {q.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <select 
+                            className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                            value={q.status}
+                            onChange={(e) => handleUpdateStatus(q.id!, e.target.value as Quotation['status'])}
+                          >
+                            <option value="Enviado">Marcar Enviado</option>
+                            <option value="Respondido">Marcar Respondido</option>
+                            <option value="Negociando">Marcar Negociando</option>
+                          </select>
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
-                            onClick={() => handleRemoveFile(q.id!)}
-                            title="Remover anexo"
+                            className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
+                            onClick={() => setConfirmDelete(q.id!)}
+                            disabled={deletingId === q.id}
                           >
-                            <X size={12} />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="relative">
-                          <input 
-                            type="file" 
-                            id={`file-${q.id}`}
-                            className="hidden"
-                            accept=".pdf,.xlsx,.xls,.doc,.docx"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleFileUpload(q.id!, file);
-                            }}
-                          />
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 text-gray-400 dark:text-slate-500 hover:text-[#0EA5E9] gap-1.5 text-[10px] relative overflow-hidden"
-                            onClick={() => document.getElementById(`file-${q.id}`)?.click()}
-                            disabled={uploadingId === q.id}
-                          >
-                            {uploadingId === q.id ? (
-                              <>
-                                <div 
-                                  className="absolute inset-0 bg-blue-50 dark:bg-blue-900/30 transition-all duration-300" 
-                                  style={{ width: `${uploadProgress}%`, opacity: 0.5 }}
-                                />
-                                <Loader2 size={14} className="animate-spin relative z-10" />
-                                <span className="relative z-10">{Math.round(uploadProgress)}%</span>
-                              </>
+                            {deletingId === q.id ? (
+                              <Loader2 size={14} className="animate-spin" />
                             ) : (
-                              <>
-                                <Upload size={14} />
-                                Anexar PDF/Excel
-                              </>
+                              <Trash2 size={14} />
                             )}
                           </Button>
                         </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={cn(
-                        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
-                        q.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                        q.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-                        q.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                      )}>
-                        {q.status === 'Enviado' && <Clock size={12} />}
-                        {q.status === 'Respondido' && <CheckCircle2 size={12} />}
-                        {q.status === 'Negociando' && <MessageSquare size={12} />}
-                        {q.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <select 
-                          className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                          value={q.status}
-                          onChange={(e) => handleUpdateStatus(q.id!, e.target.value as Quotation['status'])}
-                        >
-                          <option value="Enviado">Marcar Enviado</option>
-                          <option value="Respondido">Marcar Respondido</option>
-                          <option value="Negociando">Marcar Negociando</option>
-                        </select>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
-                          onClick={() => setConfirmDelete(q.id!)}
-                          disabled={deletingId === q.id}
-                        >
-                          {deletingId === q.id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={14} />
-                          )}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  ))
+                )
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center">
+                  <td colSpan={7} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-400 dark:text-slate-600">
                       <AlertCircle size={48} className="mb-4 opacity-20" />
                       <p className="text-lg font-medium">Nenhum registro encontrado</p>
@@ -397,12 +613,21 @@ export default function HistoryPage() {
       >
         {previewFile && (
           <div className="w-full h-full min-h-[60vh] flex flex-col">
-            {previewFile.name.toLowerCase().endsWith('.pdf') ? (
+            {previewFile.name.toLowerCase().match(/\.(pdf)$/) ? (
               <iframe 
                 src={`${previewFile.url}#toolbar=0`} 
                 className="w-full h-full flex-1 rounded-xl border border-gray-100 dark:border-slate-800"
                 title="PDF Preview"
               />
+            ) : previewFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
+              <div className="flex-1 flex items-center justify-center p-4">
+                <img 
+                  src={previewFile.url} 
+                  alt={previewFile.name} 
+                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center flex-1 p-10 text-center">
                 <div className="h-20 w-20 rounded-full bg-blue-50 dark:bg-slate-800 flex items-center justify-center mb-4">

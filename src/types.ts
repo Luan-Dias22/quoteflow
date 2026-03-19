@@ -31,12 +31,19 @@ export interface Tool {
   createdAt: string;
 }
 
+export interface QuotationItem {
+  toolId: string;
+  toolName: string;
+  quantity: number;
+}
+
 export interface Quotation {
   id?: string;
   userId: string;
-  toolId: string;
-  toolName: string;
+  toolId?: string;
+  toolName?: string;
   quantity?: number;
+  items?: QuotationItem[];
   contacts: string[];
   message: string;
   status: 'Enviado' | 'Respondido' | 'Negociando';
