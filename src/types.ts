@@ -48,8 +48,6 @@ export interface Quotation {
   contacts: string[];
   message: string;
   status: 'Enviado' | 'Respondido' | 'Negociando';
-  fileURL?: string;
-  fileName?: string;
   createdAt: string;
 }
 

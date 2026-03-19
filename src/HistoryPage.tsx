@@ -9,19 +9,14 @@ import {
   AlertCircle,
   MoreVertical,
   ChevronDown,
-  FileText,
-  Upload,
-  Download,
-  X,
-  Paperclip,
-  Eye,
   Trash2,
   User,
-  ChevronRight
+  ChevronRight,
+  X,
+  Eye
 } from 'lucide-react';
-import { collection, query, where, getDocs, updateDoc, doc, orderBy, deleteField, deleteDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from './firebase';
+import { collection, query, where, getDocs, updateDoc, doc, orderBy, deleteDoc } from 'firebase/firestore';
+import { db } from './firebase';
 import { useAuth } from './contexts/AuthContext';
 import { Button, Input, Card, Modal } from './components/UI';
 import { Quotation, Supplier, QuotationItem } from './types';
@@ -35,13 +30,10 @@ export default function HistoryPage() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [groupBySupplier, setGroupBySupplier] = useState(true);
   const [expandedSuppliers, setExpandedSuppliers] = useState<string[]>([]);
-  const [previewFile, setPreviewFile] = useState<{ url: string, name: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -82,71 +74,6 @@ export default function HistoryPage() {
 
   const getSupplier = (phone: string) => {
     return suppliers.find(s => s.whatsapp === phone);
-  };
-
-  const handleFileUpload = async (id: string, file: File) => {
-    if (!user) return;
-    
-    // Limit file size to 10MB
-    if (file.size > 10 * 1024 * 1024) {
-      setError('O arquivo é muito grande. O limite é de 10MB.');
-      return;
-    }
-
-    setUploadingId(id);
-    setUploadProgress(0);
-    
-    try {
-      const storageRef = ref(storage, `quotations/${user.uid}/${id}/${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      uploadTask.on('state_changed', 
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress);
-        }, 
-        (error) => {
-          console.error('Upload error:', error);
-          setError('Erro ao fazer upload do arquivo. Verifique sua conexão.');
-          setUploadingId(null);
-        }, 
-        async () => {
-          const fileURL = await getDownloadURL(uploadTask.snapshot.ref);
-          
-          await updateDoc(doc(db, 'quotations', id), { 
-            fileURL, 
-            fileName: file.name,
-            status: 'Respondido'
-          });
-          
-          setQuotations(prev => prev.map(q => q.id === id ? { 
-            ...q, 
-            fileURL, 
-            fileName: file.name,
-            status: 'Respondido'
-          } : q));
-          setUploadingId(null);
-          setUploadProgress(0);
-        }
-      );
-    } catch (error) {
-      console.error('Error initiating upload:', error);
-      handleFirestoreError(error, OperationType.UPDATE, `quotations/${id}`);
-      setUploadingId(null);
-    }
-  };
-
-  const handleRemoveFile = async (id: string) => {
-    const path = `quotations/${id}`;
-    try {
-      await updateDoc(doc(db, 'quotations', id), { 
-        fileURL: deleteField(), 
-        fileName: deleteField() 
-      });
-      setQuotations(prev => prev.map(q => q.id === id ? { ...q, fileURL: undefined, fileName: undefined } : q));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, path);
-    }
   };
 
   const handleUpdateStatus = async (id: string, status: Quotation['status'], quotes?: Quotation[]) => {
@@ -321,7 +248,6 @@ export default function HistoryPage() {
                   <th className="px-6 py-4">Data</th>
                   <th className="px-6 py-4">Itens</th>
                   <th className="px-6 py-4">Mensagem</th>
-                  <th className="px-6 py-4">Anexo</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Ações</th>
                 </tr>
@@ -329,7 +255,7 @@ export default function HistoryPage() {
             <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center">
+                  <td colSpan={6} className="px-6 py-10 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#0EA5E9]" />
                   </td>
                 </tr>
@@ -352,7 +278,7 @@ export default function HistoryPage() {
                               className={cn("text-gray-400 transition-transform", isExpanded && "rotate-90")} 
                             />
                           </td>
-                          <td colSpan={6} className="px-6 py-3">
+                          <td colSpan={5} className="px-6 py-3">
                             <div className="flex items-center gap-2">
                               <User size={16} className="text-[#0EA5E9]" />
                               <span className="font-bold text-gray-900 dark:text-white">{supplierName}</span>
@@ -386,80 +312,6 @@ export default function HistoryPage() {
                             </td>
                             <td className="px-6 py-4 max-w-[250px]">
                               <p className="truncate text-gray-500 dark:text-slate-500 italic">"{g.message}"</p>
-                            </td>
-                            <td className="px-6 py-4">
-                              {g.fileURL ? (
-                                <div className="flex items-center gap-1">
-                                  <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50">
-                                    <Paperclip size={14} className="text-[#0EA5E9]" />
-                                    <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{g.fileName || 'Arquivo'}</span>
-                                    <div className="flex items-center border-l border-blue-200 dark:border-blue-900/50 ml-1 pl-1 gap-1">
-                                      <button 
-                                        onClick={() => setPreviewFile({ url: g.fileURL!, name: g.fileName || 'Cotação' })}
-                                        className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
-                                        title="Visualizar"
-                                      >
-                                        <Eye size={12} />
-                                      </button>
-                                      <a 
-                                        href={g.fileURL} 
-                                        download={g.fileName}
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
-                                        title="Baixar"
-                                      >
-                                        <Download size={12} />
-                                      </a>
-                                    </div>
-                                  </div>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
-                                    onClick={() => handleRemoveFile(g.id!)}
-                                    title="Remover anexo"
-                                  >
-                                    <X size={12} />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <div className="relative">
-                                  <input 
-                                    type="file" 
-                                    id={`file-${g.id}`}
-                                    className="hidden"
-                                    accept=".pdf,.xlsx,.xls,.doc,.docx,image/*"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) handleFileUpload(g.id!, file);
-                                    }}
-                                  />
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-8 text-gray-400 dark:text-slate-500 hover:text-[#0EA5E9] gap-1.5 text-[10px] relative overflow-hidden"
-                                    onClick={() => document.getElementById(`file-${g.id}`)?.click()}
-                                    disabled={uploadingId === g.id}
-                                  >
-                                    {uploadingId === g.id ? (
-                                      <>
-                                        <div 
-                                          className="absolute inset-0 bg-blue-50 dark:bg-blue-900/30 transition-all duration-300" 
-                                          style={{ width: `${uploadProgress}%`, opacity: 0.5 }}
-                                        />
-                                        <Loader2 size={14} className="animate-spin relative z-10" />
-                                        <span className="relative z-10">{Math.round(uploadProgress)}%</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Paperclip size={14} />
-                                        Anexar
-                                      </>
-                                    )}
-                                  </Button>
-                                </div>
-                              )}
                             </td>
                             <td className="px-6 py-4">
                               <span className={cn(
@@ -541,80 +393,6 @@ export default function HistoryPage() {
                         <p className="truncate text-gray-500 dark:text-slate-500 italic">"{g.message}"</p>
                       </td>
                       <td className="px-6 py-4">
-                        {g.fileURL ? (
-                          <div className="flex items-center gap-1">
-                            <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50">
-                              <Paperclip size={14} className="text-[#0EA5E9]" />
-                              <span className="max-w-[80px] truncate text-[10px] font-medium text-gray-700 dark:text-slate-300">{g.fileName || 'Arquivo'}</span>
-                              <div className="flex items-center border-l border-blue-200 dark:border-blue-900/50 ml-1 pl-1 gap-1">
-                                <button 
-                                  onClick={() => setPreviewFile({ url: g.fileURL!, name: g.fileName || 'Cotação' })}
-                                  className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
-                                  title="Visualizar"
-                                >
-                                  <Eye size={12} />
-                                </button>
-                                <a 
-                                  href={g.fileURL} 
-                                  download={g.fileName}
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="p-1 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors"
-                                  title="Baixar"
-                                >
-                                  <Download size={12} />
-                                </a>
-                              </div>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-6 w-6 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
-                              onClick={() => handleRemoveFile(g.id!)}
-                              title="Remover anexo"
-                            >
-                              <X size={12} />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="relative">
-                            <input 
-                              type="file" 
-                              id={`file-flat-${g.id}`}
-                              className="hidden"
-                              accept=".pdf,.xlsx,.xls,.doc,.docx,image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleFileUpload(g.id!, file);
-                              }}
-                            />
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 text-gray-400 dark:text-slate-500 hover:text-[#0EA5E9] gap-1.5 text-[10px] relative overflow-hidden"
-                              onClick={() => document.getElementById(`file-flat-${g.id}`)?.click()}
-                              disabled={uploadingId === g.id}
-                            >
-                              {uploadingId === g.id ? (
-                                <>
-                                  <div 
-                                    className="absolute inset-0 bg-blue-50 dark:bg-blue-900/30 transition-all duration-300" 
-                                    style={{ width: `${uploadProgress}%`, opacity: 0.5 }}
-                                  />
-                                  <Loader2 size={14} className="animate-spin relative z-10" />
-                                  <span className="relative z-10">{Math.round(uploadProgress)}%</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Paperclip size={14} />
-                                  Anexar
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
                         <span className={cn(
                           'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
                           g.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -667,7 +445,7 @@ export default function HistoryPage() {
                 )
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
+                  <td colSpan={6} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-400 dark:text-slate-600">
                       <AlertCircle size={48} className="mb-4 opacity-20" />
                       <p className="text-lg font-medium">Nenhum registro encontrado</p>
@@ -680,50 +458,6 @@ export default function HistoryPage() {
           </table>
         </div>
       </Card>
-
-      {/* Preview Modal */}
-      <Modal
-        isOpen={!!previewFile}
-        onClose={() => setPreviewFile(null)}
-        title={previewFile?.name || 'Visualizar Arquivo'}
-        size="full"
-      >
-        {previewFile && (
-          <div className="w-full h-full min-h-[60vh] flex flex-col">
-            {previewFile.name.toLowerCase().match(/\.(pdf)$/) ? (
-              <iframe 
-                src={`${previewFile.url}#toolbar=0`} 
-                className="w-full h-full flex-1 rounded-xl border border-gray-100 dark:border-slate-800"
-                title="PDF Preview"
-              />
-            ) : previewFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
-              <div className="flex-1 flex items-center justify-center p-4">
-                <img 
-                  src={previewFile.url} 
-                  alt={previewFile.name} 
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center flex-1 p-10 text-center">
-                <div className="h-20 w-20 rounded-full bg-blue-50 dark:bg-slate-800 flex items-center justify-center mb-4">
-                  <FileText size={40} className="text-[#0EA5E9]" />
-                </div>
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Visualização não disponível</h4>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mb-6 max-w-xs">
-                  Arquivos Excel ou Word não podem ser visualizados diretamente no navegador. 
-                  Por favor, faça o download para abrir no seu dispositivo.
-                </p>
-                <a href={previewFile.url} download={previewFile.name} className="inline-flex items-center justify-center rounded-xl font-medium transition-all bg-[#0EA5E9] text-white hover:bg-[#0284C7] shadow-sm h-10 px-4 py-2 text-sm gap-2">
-                  <Download size={18} />
-                  Baixar Arquivo
-                </a>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -863,40 +597,6 @@ export default function HistoryPage() {
                     )}
                   </div>
                 </div>
-
-                {viewingQuotation.fileURL && (
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2">Anexo</h4>
-                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                      <div className="flex items-center gap-3">
-                        <Paperclip size={18} className="text-[#0EA5E9]" />
-                        <div className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[150px]">
-                          {viewingQuotation.fileName || 'Arquivo de Cotação'}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50"
-                          onClick={() => {
-                            setViewingQuotation(null);
-                            setPreviewFile({ url: viewingQuotation.fileURL!, name: viewingQuotation.fileName || 'Cotação' });
-                          }}
-                        >
-                          <Eye size={16} />
-                        </Button>
-                        <a 
-                          href={viewingQuotation.fileURL} 
-                          download={viewingQuotation.fileName}
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-[#0EA5E9] hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                        >
-                          <Download size={16} />
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 

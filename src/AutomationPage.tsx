@@ -11,14 +11,10 @@ import {
   ArrowRight,
   Info,
   Filter,
-  ChevronDown,
-  Paperclip,
-  X,
-  Upload
+  ChevronDown
 } from 'lucide-react';
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from './firebase';
+import { db } from './firebase';
 import { useAuth } from './contexts/AuthContext';
 import { Button, Input, Label, Card, Textarea } from './components/UI';
 import { Tool, Supplier } from './types';
@@ -43,70 +39,7 @@ export default function AutomationPage() {
   const [step, setStep] = useState(1);
   const [isQuickQuote, setIsQuickQuote] = useState(false);
   const [selectedQuickSupplierId, setSelectedQuickSupplierId] = useState('');
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const validateFile = (file: File) => {
-    const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'image/png',
-      'image/jpeg',
-      'image/gif'
-    ];
-    const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.png', '.jpg', '.jpeg', '.gif'];
-    const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-
-    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) {
-      setError('Tipo de arquivo não suportado. Use PDF, Word, Excel ou Imagens.');
-      return false;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setError('O arquivo é muito grande. O limite é de 10MB.');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (validateFile(file)) {
-        setAttachedFile(file);
-        setError(null);
-      }
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (validateFile(file)) {
-        setAttachedFile(file);
-        setError(null);
-      }
-    }
-  };
 
   useEffect(() => {
     setSelectedTools({});
@@ -201,35 +134,6 @@ export default function AutomationPage() {
 
     try {
       const batchTimestamp = new Date().toISOString();
-      let fileURL = '';
-      let fileName = '';
-
-      if (attachedFile) {
-        setIsUploading(true);
-        const storageRef = ref(storage, `quotations/${user.uid}/temp/${Date.now()}_${attachedFile.name}`);
-        const uploadTask = uploadBytesResumable(storageRef, attachedFile);
-
-        await new Promise((resolve, reject) => {
-          uploadTask.on('state_changed',
-            (snapshot) => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              setUploadProgress(progress);
-            },
-            (error) => {
-              console.error('Upload error:', error);
-              setError('Erro ao fazer upload do arquivo.');
-              setIsUploading(false);
-              reject(error);
-            },
-            async () => {
-              fileURL = await getDownloadURL(uploadTask.snapshot.ref);
-              fileName = attachedFile.name;
-              setIsUploading(false);
-              resolve(null);
-            }
-          );
-        });
-      }
 
       if (groupTools) {
         // Group by contact
@@ -275,8 +179,8 @@ export default function AutomationPage() {
               contacts: [contact],
               message,
               status: 'Enviado',
-              fileURL: fileURL || null,
-              fileName: fileName || null,
+              fileURL: null,
+              fileName: null,
               createdAt: batchTimestamp
             });
           } catch (error) {
@@ -307,8 +211,8 @@ export default function AutomationPage() {
                 contacts: [contact],
                 message,
                 status: 'Enviado',
-                fileURL: fileURL || null,
-                fileName: fileName || null,
+                fileURL: null,
+                fileName: null,
                 createdAt: batchTimestamp
               });
             } catch (error) {
@@ -337,8 +241,8 @@ export default function AutomationPage() {
                   contacts: [contact],
                   message,
                   status: 'Enviado',
-                  fileURL: fileURL || null,
-                  fileName: fileName || null,
+                  fileURL: null,
+                  fileName: null,
                   createdAt: batchTimestamp
                 });
               } catch (error) {
@@ -656,74 +560,6 @@ export default function AutomationPage() {
           </div>
 
           <div className="space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4 text-[#0EA5E9]">
-                <Paperclip size={20} />
-                <h3 className="font-bold">Anexo da Cotação</h3>
-              </div>
-              
-              <div 
-                className={cn(
-                  "relative border-2 border-dashed rounded-2xl p-8 transition-all flex flex-col items-center justify-center gap-4 text-center",
-                  isDragging ? "border-[#0EA5E9] bg-blue-50 dark:bg-blue-900/10" : "border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700",
-                  attachedFile && "border-emerald-200 bg-emerald-50/30 dark:border-emerald-900/20 dark:bg-emerald-900/5"
-                )}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <input
-                  type="file"
-                  id="file-upload"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,image/*"
-                />
-
-                {attachedFile ? (
-                  <>
-                    <div className="h-16 w-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                      <CheckCircle2 size={32} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-900 dark:text-white">{attachedFile.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-slate-400">
-                        {(attachedFile.size / (1024 * 1024)).toFixed(2)} MB
-                      </p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setAttachedFile(null)}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                    >
-                      Remover Arquivo
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <div className="h-16 w-16 rounded-2xl bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 flex items-center justify-center">
-                      <Upload size={32} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-900 dark:text-white">Arraste um arquivo aqui</p>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">Ou clique para selecionar do seu computador</p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => document.getElementById('file-upload')?.click()}
-                    >
-                      Selecionar Arquivo
-                    </Button>
-                    <p className="text-[10px] text-gray-400 dark:text-slate-500 uppercase tracking-wider font-bold">
-                      PDF, DOC, XLS ou Imagens (Máx. 10MB)
-                    </p>
-                  </>
-                )}
-              </div>
-              {error && <p className="mt-2 text-xs text-red-500 font-medium text-center">{error}</p>}
-            </Card>
-
             <div className="flex justify-between pt-8 items-center">
               <Button variant="outline" size="lg" onClick={() => setStep(1)} disabled={isSending}>Voltar</Button>
               
@@ -738,7 +574,7 @@ export default function AutomationPage() {
                   <div className="flex items-center gap-3">
                     <Loader2 className="animate-spin" />
                     <span className="text-sm">
-                      {isUploading ? `Enviando Arquivo (${Math.round(uploadProgress)}%)` : 'Processando...'}
+                      Processando...
                     </span>
                   </div>
                 ) : (

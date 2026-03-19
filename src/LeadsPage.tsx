@@ -80,7 +80,11 @@ export default function LeadsPage() {
             phone: data.phone || 'Sem telefone',
             message: data.message || '',
             source: data.source || 'Desconhecida',
-            status: data.status || 'Novo Pedido'
+            status: (data.status === 'Novo' ? 'Novo Pedido' : 
+                     data.status === 'Em Contato' ? 'Pedido Lançado' :
+                     data.status === 'Convertido' ? 'Pedido Concluído' :
+                     data.status === 'Perdido' ? 'Pedido Concluído' : 
+                     data.status) || 'Novo Pedido'
           };
         }) as Lead[];
         
