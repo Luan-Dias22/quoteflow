@@ -49,6 +49,8 @@ export interface Quotation {
   message: string;
   status: 'Enviado' | 'Respondido' | 'Negociando';
   createdAt: string;
+  pdfUrl?: string;
+  pdfName?: string;
 }
 
 export interface Lead {

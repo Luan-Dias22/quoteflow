@@ -59,17 +59,28 @@
         "toolId": { "type": "string" },
         "toolName": { "type": "string" },
         "quantity": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "toolId": { "type": "string" },
+              "toolName": { "type": "string" },
+              "quantity": { "type": "number" }
+            }
+          }
+        },
         "contacts": {
           "type": "array",
           "items": { "type": "string" }
         },
         "message": { "type": "string" },
         "status": { "type": "string", "enum": ["Enviado", "Respondido", "Negociando"] },
-        "fileURL": { "type": "string" },
-        "fileName": { "type": "string" },
+        "pdfUrl": { "type": "string" },
+        "pdfName": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "toolId", "toolName", "contacts", "message", "status", "createdAt"]
+      "required": ["userId", "toolName", "contacts", "message", "status", "createdAt"]
     },
     "Lead": {
       "title": "Lead",

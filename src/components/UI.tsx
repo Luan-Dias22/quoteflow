@@ -69,7 +69,7 @@ export const Card = ({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   <div className={cn('rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-950 dark:text-slate-50 shadow-sm transition-colors duration-300', className)} {...props} />
 );
 
-export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode, size?: 'sm' | 'md' | 'lg' | 'xl' | 'full' }) => {
+export const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode, footer?: React.ReactNode, size?: 'sm' | 'md' | 'lg' | 'xl' | 'full' }) => {
   if (!isOpen) return null;
   const sizes = {
     sm: 'max-w-sm',
@@ -80,8 +80,8 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: { isOpe
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm p-4">
-      <div className={cn("w-full rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col transition-colors duration-300", sizes[size])}>
-        <div className="mb-4 flex items-center justify-between shrink-0">
+      <div className={cn("w-full max-h-[90vh] rounded-3xl bg-white dark:bg-slate-900 shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col transition-colors duration-300", sizes[size])}>
+        <div className="p-6 pb-4 flex items-center justify-between shrink-0 border-b border-gray-100 dark:border-slate-800">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h3>
           <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
             <svg className="h-6 w-6 text-gray-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,9 +89,14 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: { isOpe
             </svg>
           </button>
         </div>
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto p-6">
           {children}
         </div>
+        {footer && (
+          <div className="p-6 pt-4 shrink-0 border-t border-gray-100 dark:border-slate-800">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

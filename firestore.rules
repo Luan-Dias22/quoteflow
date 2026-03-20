@@ -54,16 +54,17 @@ service cloud.firestore {
     }
 
     function isValidQuotation(data) {
-      return hasOnlyAllowedFields(['userId', 'toolId', 'toolName', 'quantity', 'contacts', 'message', 'status', 'createdAt', 'updatedAt', 'fileURL', 'fileName']) &&
+      return hasOnlyAllowedFields(['userId', 'toolId', 'toolName', 'quantity', 'items', 'contacts', 'message', 'status', 'createdAt', 'updatedAt', 'pdfUrl', 'pdfName']) &&
              data.userId == request.auth.uid &&
-             data.toolId is string &&
              data.toolName is string &&
-             (data.quantity == null || data.quantity is number) &&
+             (!('toolId' in data) || data.toolId is string) &&
+             (!('quantity' in data) || data.quantity == null || data.quantity is number) &&
+             (!('items' in data) || data.items is list) &&
              data.contacts is list &&
              data.message is string &&
              data.status in ['Enviado', 'Respondido', 'Negociando'] &&
-             (!('fileURL' in data) || data.fileURL is string) &&
-             (!('fileName' in data) || data.fileName is string);
+             (!('pdfUrl' in data) || data.pdfUrl == null || data.pdfUrl is string) &&
+             (!('pdfName' in data) || data.pdfName == null || data.pdfName is string);
     }
 
     function isValidLead(data) {

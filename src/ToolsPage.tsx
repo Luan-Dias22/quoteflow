@@ -499,8 +499,22 @@ export default function ToolsPage() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title={editingTool ? 'Editar Produto' : 'Novo Produto'}
+        footer={
+          <div className="flex justify-end gap-3">
+            {isSaving && (
+              <div className="flex items-center gap-2 text-xs text-[#0EA5E9] animate-pulse mr-auto">
+                <Loader2 size={14} className="animate-spin" />
+                <span>{isCompressing ? 'Otimizando imagem...' : 'Enviando dados...'}</span>
+              </div>
+            )}
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+            <Button type="submit" form="tool-form" disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editingTool ? 'Salvar Alterações' : 'Cadastrar Produto'}
+            </Button>
+          </div>
+        }
       >
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+        <form id="tool-form" onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
               <AlertCircle size={18} className="shrink-0" />
@@ -625,19 +639,6 @@ export default function ToolsPage() {
               </div>
             ))}
           </div>
-
-          <div className="flex justify-end gap-3 pt-6">
-            {isSaving && (
-              <div className="flex items-center gap-2 text-xs text-[#0EA5E9] animate-pulse mr-auto">
-                <Loader2 size={14} className="animate-spin" />
-                <span>{isCompressing ? 'Otimizando imagem...' : 'Enviando dados...'}</span>
-              </div>
-            )}
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editingTool ? 'Salvar Alterações' : 'Cadastrar Produto'}
-            </Button>
-          </div>
         </form>
       </Modal>
 
@@ -646,6 +647,16 @@ export default function ToolsPage() {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         title="Confirmar Exclusão"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={confirmDelete}>
+              Excluir Produto
+            </Button>
+          </div>
+        }
       >
         <div className="space-y-4">
           <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-800/30">
@@ -653,14 +664,6 @@ export default function ToolsPage() {
             <p className="text-sm font-medium">
               Tem certeza que deseja excluir esta ferramenta? Esta ação não pode ser desfeita.
             </p>
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button variant="danger" onClick={confirmDelete}>
-              Excluir Produto
-            </Button>
           </div>
         </div>
       </Modal>

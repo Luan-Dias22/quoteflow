@@ -179,8 +179,8 @@ export default function AutomationPage() {
               contacts: [contact],
               message,
               status: 'Enviado',
-              fileURL: null,
-              fileName: null,
+              pdfUrl: null,
+              pdfName: null,
               createdAt: batchTimestamp
             });
           } catch (error) {
@@ -211,8 +211,8 @@ export default function AutomationPage() {
                 contacts: [contact],
                 message,
                 status: 'Enviado',
-                fileURL: null,
-                fileName: null,
+                pdfUrl: null,
+                pdfName: null,
                 createdAt: batchTimestamp
               });
             } catch (error) {
@@ -241,8 +241,8 @@ export default function AutomationPage() {
                   contacts: [contact],
                   message,
                   status: 'Enviado',
-                  fileURL: null,
-                  fileName: null,
+                  pdfUrl: null,
+                  pdfName: null,
                   createdAt: batchTimestamp
                 });
               } catch (error) {

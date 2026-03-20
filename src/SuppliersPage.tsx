@@ -249,8 +249,16 @@ export default function SuppliersPage() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title={editingSupplier ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+            <Button type="submit" form="supplier-form" disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editingSupplier ? 'Salvar Alterações' : 'Cadastrar Fornecedor'}
+            </Button>
+          </div>
+        }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="supplier-form" onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
               <AlertCircle size={18} className="shrink-0" />
@@ -331,13 +339,6 @@ export default function SuppliersPage() {
               onChange={(e) => setFormData({ ...formData, observations: e.target.value })} 
               placeholder="Notas sobre o fornecedor..."
             />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editingSupplier ? 'Salvar Alterações' : 'Cadastrar Fornecedor'}
-            </Button>
           </div>
         </form>
       </Modal>

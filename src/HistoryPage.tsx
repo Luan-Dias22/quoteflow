@@ -13,7 +13,10 @@ import {
   User,
   ChevronRight,
   X,
-  Eye
+  Eye,
+  FileText,
+  Paperclip,
+  Download
 } from 'lucide-react';
 import { collection, query, where, getDocs, updateDoc, doc, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
@@ -24,6 +27,88 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from './lib/utils';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
+
+function PDFPreview({ url }: { url: string }) {
+  const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let currentUrl: string | null = null;
+
+    const loadPdf = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/proxy-pdf?url=${encodeURIComponent(url)}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Falha ao carregar o PDF');
+        }
+        
+        const blob = await response.blob();
+        if (blob.type !== 'application/pdf' && blob.size < 100) {
+          // Likely an error message returned as text
+          throw new Error('O arquivo retornado não é um PDF válido');
+        }
+        
+        currentUrl = URL.createObjectURL(blob);
+        setBlobUrl(currentUrl);
+      } catch (err: any) {
+        console.error('PDF Preview Error:', err);
+        setError(err.message || 'Não foi possível carregar a pré-visualização do PDF.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPdf();
+
+    return () => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+    };
+  }, [url]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 bg-gray-50 dark:bg-slate-800/50 animate-pulse">
+        <Loader2 className="h-8 w-8 animate-spin text-[#0EA5E9]" />
+        <p className="text-sm font-medium text-gray-500 dark:text-slate-400">Carregando visualização...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-4 bg-red-50/30 dark:bg-red-900/5">
+        <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center text-red-500">
+          <AlertCircle size={24} />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-red-600 dark:text-red-400 mb-1">Erro na Visualização</p>
+          <p className="text-xs text-red-500/80 dark:text-red-400/60 max-w-[250px] mx-auto">{error}</p>
+        </div>
+        <a 
+          href={`/api/proxy-pdf?url=${encodeURIComponent(url)}`} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/30 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm"
+        >
+          <Eye size={14} />
+          Abrir em nova aba
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <iframe 
+      src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
+      className="w-full h-full border-none"
+      title="PDF Preview"
+    />
+  );
+}
 
 export default function HistoryPage() {
   const { user } = useAuth();
@@ -38,6 +123,8 @@ export default function HistoryPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [viewingQuotation, setViewingQuotation] = useState<any | null>(null);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     if (!user) return;
@@ -96,10 +183,39 @@ export default function HistoryPage() {
     setDeletingId(id);
     try {
       if (quotes && quotes.length > 1) {
-        // Delete all quotes in the group
-        await Promise.all(quotes.map(q => deleteDoc(doc(db, 'quotations', q.id!))));
+        // Delete all quotes in the group and their PDFs
+        await Promise.all(quotes.map(async (q) => {
+          if (q.pdfUrl) {
+            try {
+              const response = await fetch('/api/delete-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: q.pdfUrl }),
+              });
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Delete failed');
+              }
+            } catch (e) {
+              console.error("Error deleting PDF from Vercel Blob:", e);
+            }
+          }
+          return deleteDoc(doc(db, 'quotations', q.id!));
+        }));
         setQuotations(prev => prev.filter(q => !quotes.some(gq => gq.id === q.id)));
       } else {
+        const quote = quotations.find(q => q.id === id);
+        if (quote?.pdfUrl) {
+          try {
+            await fetch('/api/delete-pdf', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: quote.pdfUrl }),
+            });
+          } catch (e) {
+            console.error("Error deleting PDF from Vercel Blob:", e);
+          }
+        }
         await deleteDoc(doc(db, 'quotations', id));
         setQuotations(prev => prev.filter(q => q.id !== id));
       }
@@ -108,6 +224,122 @@ export default function HistoryPage() {
       handleFirestoreError(error, OperationType.DELETE, `quotations/${id}`);
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleUploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !viewingQuotation || !user) return;
+
+    if (file.type !== 'application/pdf') {
+      setError('Por favor, selecione um arquivo PDF.');
+      return;
+    }
+
+    setUploadingPdf(true);
+    setError(null);
+
+    try {
+      const quotesToUpdate = viewingQuotation.isGroup ? viewingQuotation.quotes : [viewingQuotation];
+      
+      // Upload file to Vercel Blob via our API
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('filename', file.name);
+
+      const response = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const blob = await response.json();
+      const downloadUrl = blob.url;
+
+      // Update all quotes in Firestore
+      await Promise.all(quotesToUpdate.map((q: Quotation) => 
+        updateDoc(doc(db, 'quotations', q.id!), { 
+          pdfUrl: downloadUrl,
+          pdfName: file.name
+        })
+      ));
+
+      // Update local state
+      setQuotations(prev => prev.map(q => 
+        quotesToUpdate.some((gq: Quotation) => gq.id === q.id) 
+          ? { ...q, pdfUrl: downloadUrl, pdfName: file.name } 
+          : q
+      ));
+
+      // Update viewing modal state
+      setViewingQuotation((prev: any) => ({
+        ...prev,
+        pdfUrl: downloadUrl,
+        pdfName: file.name,
+        quotes: prev.isGroup ? prev.quotes.map((q: any) => ({ ...q, pdfUrl: downloadUrl, pdfName: file.name })) : undefined
+      }));
+
+    } catch (err) {
+      console.error("Error uploading PDF to Vercel Blob:", err);
+      setError('Erro ao fazer upload do PDF para o Vercel Blob.');
+    } finally {
+      setUploadingPdf(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeletePdf = async () => {
+    if (!viewingQuotation || !user) return;
+
+    const quotesToUpdate = viewingQuotation.isGroup ? viewingQuotation.quotes : [viewingQuotation];
+    const pdfUrl = viewingQuotation.pdfUrl;
+
+    setUploadingPdf(true);
+    try {
+      // Delete from Vercel Blob via our API
+      const response = await fetch('/api/delete-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: pdfUrl }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Delete failed');
+      }
+
+      // Update all quotes in Firestore
+      await Promise.all(quotesToUpdate.map((q: Quotation) => 
+        updateDoc(doc(db, 'quotations', q.id!), { 
+          pdfUrl: null,
+          pdfName: null
+        })
+      ));
+
+      // Update local state
+      setQuotations(prev => prev.map(q => 
+        quotesToUpdate.some((gq: Quotation) => gq.id === q.id) 
+          ? { ...q, pdfUrl: undefined, pdfName: undefined } 
+          : q
+      ));
+
+      // Update viewing modal state
+      setViewingQuotation((prev: any) => ({
+        ...prev,
+        pdfUrl: undefined,
+        pdfName: undefined,
+        quotes: prev.isGroup ? prev.quotes.map((q: any) => ({ ...q, pdfUrl: undefined, pdfName: undefined })) : undefined
+      }));
+
+    } catch (err) {
+      console.error("Error deleting PDF from Vercel Blob:", err);
+      setError('Erro ao excluir o PDF do Vercel Blob.');
+    } finally {
+      setUploadingPdf(false);
     }
   };
 
@@ -301,6 +533,13 @@ export default function HistoryPage() {
                                 ) : g.items && g.items.length > 1 ? (
                                   <div className="font-bold text-[#0EA5E9] text-xs mb-1 uppercase tracking-wider">Cotação Conjunta</div>
                                 ) : null}
+
+                                {g.pdfUrl && (
+                                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                                    <FileText size={10} />
+                                    <span>PDF ANEXADO</span>
+                                  </div>
+                                )}
                                 
                                 {g.items.map((item: any, idx: number) => (
                                   <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
@@ -380,6 +619,13 @@ export default function HistoryPage() {
                           ) : g.items && g.items.length > 1 ? (
                             <div className="font-bold text-[#0EA5E9] text-xs mb-1 uppercase tracking-wider">Cotação Conjunta</div>
                           ) : null}
+
+                          {g.pdfUrl && (
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                              <FileText size={10} />
+                              <span>PDF ANEXADO</span>
+                            </div>
+                          )}
                           
                           {g.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
@@ -465,11 +711,7 @@ export default function HistoryPage() {
         onClose={() => setConfirmDelete(null)}
         title="Excluir Cotação"
         size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-slate-400">
-            Tem certeza que deseja excluir esta cotação do histórico? Esta ação não pode ser desfeita.
-          </p>
+        footer={
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setConfirmDelete(null)}>
               Cancelar
@@ -482,6 +724,12 @@ export default function HistoryPage() {
               {deletingId ? <Loader2 size={18} className="animate-spin" /> : 'Excluir'}
             </Button>
           </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-slate-400">
+            Tem certeza que deseja excluir esta cotação do histórico? Esta ação não pode ser desfeita.
+          </p>
         </div>
       </Modal>
 
@@ -490,7 +738,14 @@ export default function HistoryPage() {
         isOpen={!!viewingQuotation}
         onClose={() => setViewingQuotation(null)}
         title={viewingQuotation?.isGroup ? "Detalhes da Cotação em Lote" : "Detalhes da Cotação"}
-        size="lg"
+        size="xl"
+        footer={
+          <div className="flex justify-end">
+            <Button onClick={() => setViewingQuotation(null)}>
+              Fechar
+            </Button>
+          </div>
+        }
       >
         {viewingQuotation && (
           <div className="space-y-6">
@@ -610,10 +865,90 @@ export default function HistoryPage() {
               )}
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-slate-800">
-              <Button onClick={() => setViewingQuotation(null)}>
-                Fechar
-              </Button>
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2">Anexo da Cotação (PDF)</h4>
+              {viewingQuotation.pdfUrl ? (
+                <>
+                  <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                      <FileText size={20} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 truncate max-w-[200px]">
+                        {viewingQuotation.pdfName || 'cotacao.pdf'}
+                      </p>
+                      <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">Arquivo PDF anexado pelo fornecedor</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a 
+                      href={`/api/proxy-pdf?url=${encodeURIComponent(viewingQuotation.pdfUrl)}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors"
+                    >
+                      <Download size={14} />
+                      Visualizar
+                    </a>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      onClick={handleDeletePdf}
+                      disabled={uploadingPdf}
+                    >
+                      {uploadingPdf ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* PDF Preview Iframe */}
+                <div className="mt-4 border border-gray-200 dark:border-slate-800 rounded-xl overflow-hidden h-[600px] bg-gray-100 dark:bg-slate-800 shadow-inner relative">
+                  <PDFPreview url={viewingQuotation.pdfUrl} />
+                  <div className="absolute bottom-2 right-2 opacity-50 hover:opacity-100 transition-opacity pointer-events-none">
+                    <p className="text-[10px] text-slate-500 bg-white/80 dark:bg-slate-900/80 px-2 py-1 rounded">
+                      Visualização via Proxy
+                    </p>
+                  </div>
+                </div>
+              </>
+              ) : (
+                <div className="p-8 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="h-12 w-12 rounded-full bg-gray-50 dark:bg-slate-800 flex items-center justify-center text-gray-400">
+                    <Paperclip size={24} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Nenhum PDF anexado</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-500">Anexe a cotação recebida para manter o histórico completo.</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    accept=".pdf" 
+                    className="hidden" 
+                    ref={fileInputRef}
+                    onChange={handleUploadPdf}
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingPdf}
+                  >
+                    {uploadingPdf ? (
+                      <>
+                        <Loader2 size={14} className="mr-2 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Paperclip size={14} className="mr-2" />
+                        Anexar PDF
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}

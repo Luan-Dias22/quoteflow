@@ -348,6 +348,9 @@ export default function LeadsPage() {
         isOpen={!!selectedLeadMessage}
         onClose={() => setSelectedLeadMessage(null)}
         title="Mensagem do Lead"
+        footer={
+          <Button variant="outline" className="px-8" onClick={() => setSelectedLeadMessage(null)}>Fechar</Button>
+        }
       >
         <div className="space-y-6">
           <div className="flex items-center gap-4 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-800/20">
@@ -374,10 +377,6 @@ export default function LeadsPage() {
               </p>
             </div>
           </div>
-
-          <div className="flex justify-end">
-            <Button variant="outline" className="px-8" onClick={() => setSelectedLeadMessage(null)}>Fechar</Button>
-          </div>
         </div>
       </Modal>
 
@@ -386,9 +385,7 @@ export default function LeadsPage() {
         isOpen={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
         title="Excluir Lead"
-      >
-        <div className="space-y-4">
-          <p className="text-gray-600 dark:text-slate-400">Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.</p>
+        footer={
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setConfirmDelete(null)}>Cancelar</Button>
             <Button 
@@ -399,6 +396,10 @@ export default function LeadsPage() {
               {deletingId ? <Loader2 className="animate-spin" /> : 'Excluir'}
             </Button>
           </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600 dark:text-slate-400">Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.</p>
         </div>
       </Modal>
     </div>
