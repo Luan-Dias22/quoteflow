@@ -57,7 +57,7 @@
     "@rollup/rollup-win32-x64-msvc": "^4.9.6"
   },
   "overrides": {
-  "rollup": "4.x.x",
+  "rollup": "lates",
   "@rollup/rollup-linux-x64-gnu": "latest"
 }
 }
