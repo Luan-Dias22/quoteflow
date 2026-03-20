@@ -120,6 +120,7 @@ export default function HistoryPage() {
   const [groupBySupplier, setGroupBySupplier] = useState(true);
   const [expandedSuppliers, setExpandedSuppliers] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [viewingQuotation, setViewingQuotation] = useState<any | null>(null);
@@ -181,6 +182,8 @@ export default function HistoryPage() {
   const handleDeleteQuotation = async (id: string, quotes?: Quotation[]) => {
     if (!user) return;
     setDeletingId(id);
+    setError(null);
+    setSuccess(null);
     try {
       if (quotes && quotes.length > 1) {
         // Delete all quotes in the group and their PDFs
@@ -238,6 +241,7 @@ export default function HistoryPage() {
 
     setUploadingPdf(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const quotesToUpdate = viewingQuotation.isGroup ? viewingQuotation.quotes : [viewingQuotation];
@@ -254,7 +258,7 @@ export default function HistoryPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
+        throw new Error(errorData.error || 'Falha no upload do arquivo.');
       }
 
       const blob = await response.json();
@@ -283,9 +287,10 @@ export default function HistoryPage() {
         quotes: prev.isGroup ? prev.quotes.map((q: any) => ({ ...q, pdfUrl: downloadUrl, pdfName: file.name })) : undefined
       }));
 
-    } catch (err) {
+      setSuccess('PDF anexado com sucesso.');
+    } catch (err: any) {
       console.error("Error uploading PDF to Vercel Blob:", err);
-      setError('Erro ao fazer upload do PDF para o Vercel Blob.');
+      setError(err.message || 'Erro ao fazer upload do PDF. Verifique sua conexão e configurações.');
     } finally {
       setUploadingPdf(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -298,7 +303,12 @@ export default function HistoryPage() {
     const quotesToUpdate = viewingQuotation.isGroup ? viewingQuotation.quotes : [viewingQuotation];
     const pdfUrl = viewingQuotation.pdfUrl;
 
+    if (!pdfUrl) return;
+
     setUploadingPdf(true);
+    setError(null);
+    setSuccess(null);
+
     try {
       // Delete from Vercel Blob via our API
       const response = await fetch('/api/delete-pdf', {
@@ -309,7 +319,7 @@ export default function HistoryPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Delete failed');
+        throw new Error(errorData.error || 'Falha ao excluir o arquivo do servidor.');
       }
 
       // Update all quotes in Firestore
@@ -335,9 +345,10 @@ export default function HistoryPage() {
         quotes: prev.isGroup ? prev.quotes.map((q: any) => ({ ...q, pdfUrl: undefined, pdfName: undefined })) : undefined
       }));
 
-    } catch (err) {
+      setSuccess('Anexo excluído com sucesso.');
+    } catch (err: any) {
       console.error("Error deleting PDF from Vercel Blob:", err);
-      setError('Erro ao excluir o PDF do Vercel Blob.');
+      setError(err.message || 'Erro ao excluir o PDF. Verifique sua conexão e configurações.');
     } finally {
       setUploadingPdf(false);
     }
@@ -466,6 +477,16 @@ export default function HistoryPage() {
           <AlertCircle size={20} />
           <p className="text-sm font-medium flex-1">{error}</p>
           <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {success && (
+        <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl animate-in slide-in-from-top-2 border border-emerald-100 dark:border-emerald-800/30">
+          <CheckCircle2 size={20} />
+          <p className="text-sm font-medium flex-1">{success}</p>
+          <button onClick={() => setSuccess(null)} className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
             <X size={16} />
           </button>
         </div>

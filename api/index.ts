@@ -26,10 +26,20 @@ app.post('/api/upload-pdf', upload.single('file'), async (req, res) => {
     }
 
     const { filename } = req.body;
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    
+    if (!token) {
+      console.error('BLOB_READ_WRITE_TOKEN is not set');
+      return res.status(500).json({ error: 'Configuração do servidor incompleta: Token do Vercel Blob ausente.' });
+    }
+    
+    console.log('Uploading to Vercel Blob:', filename || req.file.originalname);
+    
     const blob = await put(filename || req.file.originalname, req.file.buffer, {
       access: 'private',
       contentType: 'application/pdf',
       addRandomSuffix: true,
+      token: token,
     });
 
     res.json(blob);
@@ -46,7 +56,21 @@ app.post('/api/delete-pdf', async (req, res) => {
       return res.status(400).json({ error: 'No URL provided' });
     }
 
-    await del(url);
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      console.error('BLOB_READ_WRITE_TOKEN is not set');
+      return res.status(500).json({ error: 'Configuração do servidor incompleta: Token do Vercel Blob ausente.' });
+    }
+
+    console.log('Deleting from Vercel Blob:', url);
+
+    // Only attempt to delete if it's a Vercel Blob URL
+    if (url.includes('public.blob.vercel-storage.com')) {
+      await del(url, { token: token });
+    } else {
+      console.warn('URL is not a Vercel Blob URL, skipping deletion from Blob storage:', url);
+    }
+    
     res.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting from Vercel Blob:', error);
