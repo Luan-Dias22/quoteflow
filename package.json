@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "tsx api/index.ts",
     "start": "node api/index.ts",
@@ -46,5 +49,10 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.9.6",
+    "@rollup/rollup-linux-x64-musl": "^4.9.6",
+    "@rollup/rollup-win32-x64-msvc": "^4.9.6"
   }
 }
