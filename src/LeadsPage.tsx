@@ -268,13 +268,13 @@ export default function LeadsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
-                        <p className="text-sm text-gray-600 dark:text-slate-400 max-w-xs truncate" title={lead.message}>
+                        <p className="text-sm text-gray-600 dark:text-slate-400 max-w-xs line-clamp-3" title={lead.message}>
                           {lead.message}
                         </p>
-                        {lead.message.length > 40 && (
+                        {lead.message.length > 60 && (
                           <button 
                             onClick={() => setSelectedLeadMessage(lead)}
-                            className="text-[10px] uppercase tracking-wider font-bold text-[#0EA5E9] hover:text-blue-700 transition-colors text-left w-fit"
+                            className="text-[10px] uppercase tracking-wider font-bold text-[#0EA5E9] hover:text-blue-700 transition-colors text-left w-fit mt-1"
                           >
                             Ver mensagem completa
                           </button>

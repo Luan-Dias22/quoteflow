@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { Wrench, Mail, Lock, Loader2, ArrowLeft, Building2, User } from 'lucide-react';
+import { Wrench, Mail, Lock, Loader2, ArrowLeft, Building2, User, Sun, Moon } from 'lucide-react';
 import { auth, db } from './firebase';
 import { Button, Input, Label, Card } from './components/UI';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
+import { useTheme } from './contexts/ThemeContext';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [formData, setFormData] = useState({
     companyName: '',
     email: '',
@@ -80,7 +82,27 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 p-4 transition-colors duration-300">
+    <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 p-4 transition-colors duration-300 relative">
+      <div className="absolute top-6 right-6">
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all duration-200 border border-gray-100 dark:border-slate-800 shadow-sm"
+          title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+        >
+          {theme === 'light' ? (
+            <>
+              <Moon size={18} className="text-slate-600" />
+              <span className="text-xs font-semibold hidden sm:inline">🌙 Dark Mode</span>
+            </>
+          ) : (
+            <>
+              <Sun size={18} className="text-yellow-500" />
+              <span className="text-xs font-semibold hidden sm:inline">☀️ Light Mode</span>
+            </>
+          )}
+        </button>
+      </div>
+
       <div className="w-full max-w-md">
         <Link to="/" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
           <ArrowLeft size={16} />

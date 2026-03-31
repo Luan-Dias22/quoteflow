@@ -153,10 +153,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-200 border border-gray-100 dark:border-slate-700 shadow-sm"
               title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
             >
-              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+              {theme === 'light' ? (
+                <>
+                  <Moon size={18} className="text-slate-600" />
+                  <span className="text-xs font-semibold hidden md:inline">🌙 Dark Mode</span>
+                </>
+              ) : (
+                <>
+                  <Sun size={18} className="text-yellow-500" />
+                  <span className="text-xs font-semibold hidden md:inline">☀️ Light Mode</span>
+                </>
+              )}
             </button>
 
             <div className="text-right hidden sm:block">

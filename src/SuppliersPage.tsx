@@ -209,7 +209,7 @@ export default function SuppliersPage() {
                         </div>
                       ) : '-'}
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400 max-w-[200px] truncate">
+                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">
                       {s.address ? (
                         <div className="flex items-center gap-2">
                           <MapPin size={14} className="text-gray-400" />

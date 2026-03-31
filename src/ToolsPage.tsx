@@ -419,8 +419,8 @@ export default function ToolsPage() {
                             <Wrench size={18} />
                           )}
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-gray-900 dark:text-white truncate">{t.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-gray-900 dark:text-white">{t.name}</p>
                           <p className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-[200px]">{t.description}</p>
                         </div>
                       </div>

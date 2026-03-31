@@ -565,7 +565,7 @@ export default function HistoryPage() {
                                 {g.items.map((item: any, idx: number) => (
                                   <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
                                     <span className="font-bold bg-gray-100 dark:bg-slate-800 px-1 rounded">{item.quantity}x</span>
-                                    <span className="truncate max-w-[150px]">{item.toolName}</span>
+                                    <span className="font-medium">{item.toolName}</span>
                                   </div>
                                 ))}
                               </div>
@@ -651,7 +651,7 @@ export default function HistoryPage() {
                           {g.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
                               <span className="font-bold bg-gray-100 dark:bg-slate-800 px-1 rounded">{item.quantity}x</span>
-                              <span className="truncate max-w-[150px]">{item.toolName}</span>
+                              <span className="font-medium">{item.toolName}</span>
                             </div>
                           ))}
                         </div>

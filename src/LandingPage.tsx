@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, CheckCircle, Zap, Shield, ArrowRight, Users, History, LayoutDashboard, Send, Loader2, Mail, Phone, User, AlertCircle } from 'lucide-react';
+import { MessageSquare, CheckCircle, Zap, Shield, ArrowRight, Users, History, LayoutDashboard, Send, Loader2, Mail, Phone, User, AlertCircle, Sun, Moon } from 'lucide-react';
 import { Button, Input, Textarea } from './components/UI';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import { useTheme } from './contexts/ThemeContext';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +53,23 @@ export default function LandingPage() {
             <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">QuoteFlow</span>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-200 border border-gray-100 dark:border-slate-700 shadow-sm"
+              title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+            >
+              {theme === 'light' ? (
+                <>
+                  <Moon size={18} className="text-slate-600" />
+                  <span className="text-xs font-semibold hidden md:inline">🌙 Dark Mode</span>
+                </>
+              ) : (
+                <>
+                  <Sun size={18} className="text-yellow-500" />
+                  <span className="text-xs font-semibold hidden md:inline">☀️ Light Mode</span>
+                </>
+              )}
+            </button>
             <Button variant="ghost" onClick={() => navigate('/login')}>Entrar</Button>
             <Button onClick={() => navigate('/register')}>Criar Conta</Button>
           </div>

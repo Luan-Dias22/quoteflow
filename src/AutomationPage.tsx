@@ -413,8 +413,8 @@ export default function AutomationPage() {
                         <Wrench size={20} />
                       )}
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                      <h4 className="font-bold text-gray-900 dark:text-white truncate">{tool.name}</h4>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white leading-tight">{tool.name}</h4>
                       <p className="text-xs text-gray-500 dark:text-slate-400">{tool.category}</p>
                     </div>
                     <div className={cn(
