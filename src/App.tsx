@@ -13,6 +13,7 @@ import ToolsPage from './ToolsPage';
 import AutomationPage from './AutomationPage';
 import HistoryPage from './HistoryPage';
 import LeadsPage from './LeadsPage';
+import QuotationsPage from './QuotationsPage';
 import ProfilePage from './ProfilePage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -63,6 +64,7 @@ export default function App() {
                 <Route path="/automation" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
+                <Route path="/quotations" element={<ProtectedRoute><QuotationsPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
                 {/* Fallback */}

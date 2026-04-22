@@ -14,7 +14,8 @@ import {
   Sun,
   Moon,
   Zap,
-  Target
+  Target,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -35,6 +36,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: Users, label: 'Fornecedores', path: '/suppliers' },
     { icon: Wrench, label: 'Produtos', path: '/tools' },
     { icon: Zap, label: 'Automação', path: '/automation' },
+    { icon: FileText, label: 'Orçamentos', path: '/quotations' },
     { icon: History, label: 'Histórico', path: '/history' },
     { icon: Target, label: 'Leads', path: '/leads' },
     { icon: User, label: 'Perfil', path: '/profile' },
