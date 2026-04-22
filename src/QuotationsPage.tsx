@@ -39,6 +39,25 @@ export default function QuotationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load from localStorage on mount/user change
+  useEffect(() => {
+    if (user && !isLoaded) {
+      const saved = localStorage.getItem(`budget_items_${user.uid}`);
+      if (saved) {
+        setBudgetItems(JSON.parse(saved));
+      }
+      setIsLoaded(true);
+    }
+  }, [user, isLoaded]);
+
+  // Save to localStorage whenever budgetItems changes
+  useEffect(() => {
+    if (user && isLoaded) {
+      localStorage.setItem(`budget_items_${user.uid}`, JSON.stringify(budgetItems));
+    }
+  }, [budgetItems, user, isLoaded]);
 
   useEffect(() => {
     const fetchTools = async () => {
