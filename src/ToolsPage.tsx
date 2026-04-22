@@ -98,12 +98,12 @@ export default function ToolsPage() {
     setLoading(true);
     setError(null);
     try {
-      let q = query(
-        collection(db, 'tools'), 
-        where('userId', '==', user.uid), 
-        orderBy('name', 'asc'),
-        limit(PAGE_SIZE)
-      );
+      let q;
+      
+      // If there's a search term, we fetch a larger set to allow meaningful client-side filtering
+      // Firestore doesn't support complex text search, so we fetch more and filter in memory
+      // if searching, otherwise we use pagination.
+      const queryLimit = searchTerm ? 100 : PAGE_SIZE;
 
       if (categoryFilter !== 'all') {
         q = query(
@@ -111,47 +111,56 @@ export default function ToolsPage() {
           where('userId', '==', user.uid),
           where('category', '==', categoryFilter),
           orderBy('name', 'asc'),
-          limit(PAGE_SIZE)
+          limit(queryLimit)
+        );
+      } else {
+        q = query(
+          collection(db, 'tools'), 
+          where('userId', '==', user.uid), 
+          orderBy('name', 'asc'),
+          limit(queryLimit)
         );
       }
 
-      if (direction === 'next' && lastVisible) {
-        if (categoryFilter !== 'all') {
-          q = query(
-            collection(db, 'tools'),
-            where('userId', '==', user.uid),
-            where('category', '==', categoryFilter),
-            orderBy('name', 'asc'),
-            startAfter(lastVisible),
-            limit(PAGE_SIZE)
-          );
-        } else {
-          q = query(
-            collection(db, 'tools'),
-            where('userId', '==', user.uid),
-            orderBy('name', 'asc'),
-            startAfter(lastVisible),
-            limit(PAGE_SIZE)
-          );
-        }
-      } else if (direction === 'prev' && firstVisible) {
-        if (categoryFilter !== 'all') {
-          q = query(
-            collection(db, 'tools'),
-            where('userId', '==', user.uid),
-            where('category', '==', categoryFilter),
-            orderBy('name', 'asc'),
-            endBefore(firstVisible),
-            limitToLast(PAGE_SIZE)
-          );
-        } else {
-          q = query(
-            collection(db, 'tools'),
-            where('userId', '==', user.uid),
-            orderBy('name', 'asc'),
-            endBefore(firstVisible),
-            limitToLast(PAGE_SIZE)
-          );
+      if (!searchTerm) {
+        if (direction === 'next' && lastVisible) {
+          if (categoryFilter !== 'all') {
+            q = query(
+              collection(db, 'tools'),
+              where('userId', '==', user.uid),
+              where('category', '==', categoryFilter),
+              orderBy('name', 'asc'),
+              startAfter(lastVisible),
+              limit(PAGE_SIZE)
+            );
+          } else {
+            q = query(
+              collection(db, 'tools'),
+              where('userId', '==', user.uid),
+              orderBy('name', 'asc'),
+              startAfter(lastVisible),
+              limit(PAGE_SIZE)
+            );
+          }
+        } else if (direction === 'prev' && firstVisible) {
+          if (categoryFilter !== 'all') {
+            q = query(
+              collection(db, 'tools'),
+              where('userId', '==', user.uid),
+              where('category', '==', categoryFilter),
+              orderBy('name', 'asc'),
+              endBefore(firstVisible),
+              limitToLast(PAGE_SIZE)
+            );
+          } else {
+            q = query(
+              collection(db, 'tools'),
+              where('userId', '==', user.uid),
+              orderBy('name', 'asc'),
+              endBefore(firstVisible),
+              limitToLast(PAGE_SIZE)
+            );
+          }
         }
       }
 
@@ -161,42 +170,44 @@ export default function ToolsPage() {
         const docs = snap.docs;
         setFirstVisible(docs[0]);
         setLastVisible(docs[docs.length - 1]);
-        setTools(docs.map(doc => ({ id: doc.id, ...doc.data() } as Tool)));
+        setTools(docs.map(doc => ({ id: doc.id, ...(doc.data() as object) } as Tool)));
 
-        // Check if first page
-        if (!direction) {
+        if (searchTerm) {
           setIsFirstPage(true);
-        } else if (direction === 'next') {
-          setIsFirstPage(false);
-        } else if (direction === 'prev') {
-          // If we went back, we need to check if there's anything before the new firstVisible
-          const prevCheckQ = query(
+          setIsLastPage(true);
+        } else {
+          // Check if first page
+          if (!direction) {
+            setIsFirstPage(true);
+          } else if (direction === 'next') {
+            setIsFirstPage(false);
+          } else if (direction === 'prev') {
+            const prevCheckQ = query(
+              collection(db, 'tools'),
+              where('userId', '==', user.uid),
+              orderBy('name', 'asc'),
+              endBefore(docs[0]),
+              limitToLast(1)
+            );
+            const prevSnap = await getDocs(prevCheckQ);
+            setIsFirstPage(prevSnap.empty);
+          }
+
+          // Check if last page
+          const nextCheckQ = query(
             collection(db, 'tools'),
             where('userId', '==', user.uid),
             orderBy('name', 'asc'),
-            endBefore(docs[0]),
-            limitToLast(1)
+            startAfter(docs[docs.length - 1]),
+            limit(1)
           );
-          const prevSnap = await getDocs(prevCheckQ);
-          setIsFirstPage(prevSnap.empty);
+          const nextSnap = await getDocs(nextCheckQ);
+          setIsLastPage(nextSnap.empty);
         }
-
-        // Check if last page
-        const nextCheckQ = query(
-          collection(db, 'tools'),
-          where('userId', '==', user.uid),
-          orderBy('name', 'asc'),
-          startAfter(docs[docs.length - 1]),
-          limit(1)
-        );
-        const nextSnap = await getDocs(nextCheckQ);
-        setIsLastPage(nextSnap.empty);
       } else {
-        if (!direction) {
-          setTools([]);
-          setIsFirstPage(true);
-          setIsLastPage(true);
-        }
+        setTools([]);
+        setIsFirstPage(true);
+        setIsLastPage(true);
       }
     } catch (err) {
       console.error('Error fetching tools:', err);
@@ -220,7 +231,7 @@ export default function ToolsPage() {
   useEffect(() => {
     fetchTools();
     fetchSuppliers();
-  }, [user, categoryFilter]);
+  }, [user, categoryFilter, searchTerm]);
 
   const handleAddContact = () => {
     setFormData({ ...formData, contacts: [...formData.contacts, ''] });
