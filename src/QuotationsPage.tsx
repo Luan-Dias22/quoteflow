@@ -129,21 +129,32 @@ export default function QuotationsPage() {
       doc.text(`Data: ${date}`, 14, 38);
       
       // Table
-      const tableData = budgetItems.map(item => [
-        item.name,
-        item.quantity.toString(),
-        `R$ ${item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-        `R$ ${(item.quantity * item.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-      ]);
+      const allPricesZero = budgetItems.every(item => item.price === 0);
+      
+      const head = allPricesZero 
+        ? [['Produto', 'Quantidade']] 
+        : [['Produto', 'Quantidade', 'Preço Unit.', 'Total']];
+
+      const tableData = budgetItems.map(item => {
+        if (allPricesZero) {
+          return [item.name, item.quantity.toString()];
+        }
+        return [
+          item.name,
+          item.quantity.toString(),
+          `R$ ${item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+          `R$ ${(item.quantity * item.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+        ];
+      });
 
       autoTable(doc, {
         startY: 45,
-        head: [['Produto', 'Quantidade', 'Preço Unit.', 'Total']],
+        head: head,
         body: tableData,
         theme: 'striped',
         headStyles: { fillColor: [14, 165, 233] },
         styles: { fontSize: 9 },
-        columnStyles: {
+        columnStyles: allPricesZero ? { 1: { halign: 'center' } } : {
           1: { halign: 'center' },
           2: { halign: 'right' },
           3: { halign: 'right' }
@@ -152,11 +163,13 @@ export default function QuotationsPage() {
 
       const finalY = (doc as any).lastAutoTable.finalY;
       
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.setFont('helvetica', 'bold');
-      const totalText = `Valor Total do Orçamento: R$ ${calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-      doc.text(totalText, 196 - doc.getTextWidth(totalText), finalY + 15);
+      if (!allPricesZero) {
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.setFont('helvetica', 'bold');
+        const totalText = `Valor Total do Orçamento: R$ ${calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+        doc.text(totalText, 196 - doc.getTextWidth(totalText), finalY + 15);
+      }
 
       doc.save(`Orcamento_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`);
     } catch (err) {
