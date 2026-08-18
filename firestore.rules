@@ -62,7 +62,7 @@ service cloud.firestore {
              (!('items' in data) || data.items is list) &&
              data.contacts is list &&
              data.message is string &&
-             data.status in ['Enviado', 'Respondido', 'Negociando'] &&
+             data.status in ['Rascunho', 'Enviado', 'Respondido', 'Negociando'] &&
              (!('pdfUrl' in data) || data.pdfUrl == null || data.pdfUrl is string) &&
              (!('pdfName' in data) || data.pdfName == null || data.pdfName is string);
     }

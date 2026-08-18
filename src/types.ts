@@ -36,6 +36,7 @@ export interface QuotationItem {
   toolId: string;
   toolName: string;
   quantity: number;
+  description?: string;
 }
 
 export interface Quotation {
@@ -47,7 +48,7 @@ export interface Quotation {
   items?: QuotationItem[];
   contacts: string[];
   message: string;
-  status: 'Enviado' | 'Respondido' | 'Negociando';
+  status: 'Rascunho' | 'Enviado' | 'Respondido' | 'Negociando';
   createdAt: string;
   pdfUrl?: string;
   pdfName?: string;

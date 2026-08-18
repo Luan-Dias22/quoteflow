@@ -16,7 +16,8 @@ import {
   Eye,
   FileText,
   Paperclip,
-  Download
+  Download,
+  Send
 } from 'lucide-react';
 import { collection, query, where, getDocs, updateDoc, doc, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
@@ -177,6 +178,33 @@ export default function HistoryPage() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `quotations/${id}`);
     }
+  };
+
+  const handleSendDraft = async (g: any) => {
+    // Determine the phone to send to
+    const contact = g.contacts[0];
+    if (!contact) return;
+    
+    // Create the message from the items if the default message is just "Orçamento salvo" or similar
+    // Actually, g.message might already have something, but let's just use what's there and open WA.
+    const cleanPhone = contact.replace(/\D/g, '');
+    let messageText = g.message;
+    
+    if (messageText === "Cotação agendada para envio") {
+       // Auto-generate a better message since it's a draft
+       let itemList = g.items ? g.items.map((i: any) => {
+         const desc = i.description ? ` (${i.description})` : '';
+         return `- ${i.quantity}x ${i.toolName}${desc}`;
+       }).join('\n') : `- ${g.quantity}x ${g.toolName}`;
+       
+       messageText = `Olá! Gostaria de solicitar uma cotação para os seguintes itens:\n${itemList}\nFico no aguardo do seu retorno. Obrigado!`;
+    }
+
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(messageText)}`;
+    window.open(url, '_blank');
+
+    // Update status to 'Enviado'
+    await handleUpdateStatus(g.id!, 'Enviado', g.quotes);
   };
 
   const handleDeleteQuotation = async (id: string, quotes?: Quotation[]) => {
@@ -451,6 +479,7 @@ export default function HistoryPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="all">Todos Status</option>
+              <option value="Rascunho">Agendado/Rascunho</option>
               <option value="Enviado">Enviado</option>
               <option value="Respondido">Respondido</option>
               <option value="Negociando">Negociando</option>
@@ -576,14 +605,16 @@ export default function HistoryPage() {
                             <td className="px-6 py-4">
                               <span className={cn(
                                 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
+                                g.status === 'Rascunho' && 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-400',
                                 g.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
                                 g.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
                                 g.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
                               )}>
+                                {g.status === 'Rascunho' && <FileText size={12} />}
                                 {g.status === 'Enviado' && <Clock size={12} />}
                                 {g.status === 'Respondido' && <CheckCircle2 size={12} />}
                                 {g.status === 'Negociando' && <MessageSquare size={12} />}
-                                {g.status}
+                                {g.status === 'Rascunho' ? 'Agendado' : g.status}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">
@@ -597,11 +628,23 @@ export default function HistoryPage() {
                                 >
                                   <Eye size={14} />
                                 </Button>
+                                {g.status === 'Rascunho' && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                                    onClick={() => handleSendDraft(g)}
+                                    title="Enviar Cotação"
+                                  >
+                                    <Send size={14} />
+                                  </Button>
+                                )}
                                 <select 
                                   className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                                   value={g.status}
                                   onChange={(e) => handleUpdateStatus(g.id!, e.target.value as Quotation['status'], g.quotes)}
                                 >
+                                  <option value="Rascunho">Marcar Agendado</option>
                                   <option value="Enviado">Marcar Enviado</option>
                                   <option value="Respondido">Marcar Respondido</option>
                                   <option value="Negociando">Marcar Negociando</option>
@@ -662,14 +705,16 @@ export default function HistoryPage() {
                       <td className="px-6 py-4">
                         <span className={cn(
                           'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
+                          g.status === 'Rascunho' && 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-400',
                           g.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
                           g.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
                           g.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
                         )}>
+                          {g.status === 'Rascunho' && <FileText size={12} />}
                           {g.status === 'Enviado' && <Clock size={12} />}
                           {g.status === 'Respondido' && <CheckCircle2 size={12} />}
                           {g.status === 'Negociando' && <MessageSquare size={12} />}
-                          {g.status}
+                          {g.status === 'Rascunho' ? 'Agendado' : g.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -683,11 +728,23 @@ export default function HistoryPage() {
                           >
                             <Eye size={14} />
                           </Button>
+                          {g.status === 'Rascunho' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                              onClick={() => handleSendDraft(g)}
+                              title="Enviar Cotação"
+                            >
+                              <Send size={14} />
+                            </Button>
+                          )}
                           <select 
                             className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                             value={g.status}
                             onChange={(e) => handleUpdateStatus(g.id!, e.target.value as Quotation['status'], g.quotes)}
                           >
+                            <option value="Rascunho">Marcar Agendado</option>
                             <option value="Enviado">Marcar Enviado</option>
                             <option value="Respondido">Marcar Respondido</option>
                             <option value="Negociando">Marcar Negociando</option>
@@ -797,11 +854,12 @@ export default function HistoryPage() {
                       <span className="text-gray-500 dark:text-slate-400">Status:</span>
                       <span className={cn(
                         'font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-full',
+                        viewingQuotation.status === 'Rascunho' && 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-400',
                         viewingQuotation.status === 'Enviado' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
                         viewingQuotation.status === 'Respondido' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
                         viewingQuotation.status === 'Negociando' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
                       )}>
-                        {viewingQuotation.status}
+                        {viewingQuotation.status === 'Rascunho' ? 'AGENDADO' : viewingQuotation.status}
                       </span>
                     </div>
                   </div>
@@ -856,11 +914,16 @@ export default function HistoryPage() {
                   <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                     {viewingQuotation.items ? (
                       viewingQuotation.items.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50 dark:bg-slate-800/50 rounded-xl text-sm border border-gray-100 dark:border-slate-800">
-                          <span className="text-gray-900 dark:text-white font-medium">{item.toolName}</span>
-                          <span className="font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-lg">
-                            {item.quantity}x
-                          </span>
+                        <div key={idx} className="flex flex-col gap-1 p-2.5 bg-gray-50 dark:bg-slate-800/50 rounded-xl text-sm border border-gray-100 dark:border-slate-800">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-900 dark:text-white font-medium">{item.toolName}</span>
+                            <span className="font-bold text-[#0EA5E9] bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-lg shrink-0">
+                              {item.quantity}x
+                            </span>
+                          </div>
+                          {item.description && (
+                            <span className="text-xs text-gray-500 dark:text-slate-400">Cod/Desc: {item.description}</span>
+                          )}
                         </div>
                       ))
                     ) : (
