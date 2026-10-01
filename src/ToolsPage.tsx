@@ -354,11 +354,11 @@ export default function ToolsPage() {
   const openEdit = (tool: Tool) => {
     setEditingTool(tool);
     setFormData({
-      name: tool.name,
-      description: tool.description,
-      category: tool.category,
-      referencePrice: tool.referencePrice?.toString() || '',
-      contacts: tool.contacts.length > 0 ? tool.contacts : ['']
+      name: tool.name || '',
+      description: tool.description || '',
+      category: tool.category || CATEGORIES[0],
+      referencePrice: tool.referencePrice !== undefined && tool.referencePrice !== null ? tool.referencePrice.toString() : '',
+      contacts: tool.contacts && tool.contacts.length > 0 ? tool.contacts : ['']
     });
     setIsModalOpen(true);
   };

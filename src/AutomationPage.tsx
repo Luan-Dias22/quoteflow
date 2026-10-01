@@ -433,7 +433,7 @@ export default function AutomationPage() {
                         type="number"
                         min="1"
                         className="h-8 w-20 text-center text-sm bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-900/50 focus:ring-[#0EA5E9]"
-                        value={selectedTools[tool.id!]}
+                        value={selectedTools[tool.id!] ?? 1}
                         onChange={(e) => handleUpdateQuantity(tool.id!, parseInt(e.target.value) || 1)}
                         onClick={(e) => e.stopPropagation()}
                       />

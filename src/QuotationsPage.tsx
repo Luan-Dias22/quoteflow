@@ -25,14 +25,7 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
-
-interface BudgetItem {
-  toolId: string;
-  name: string;
-  quantity: number;
-  price: number;
-  description?: string;
-}
+import WhatsAppTemplateModal, { WhatsAppIcon, BudgetItem } from './components/WhatsAppTemplateModal';
 
 export default function QuotationsPage() {
   const { user, profile } = useAuth();
@@ -50,6 +43,7 @@ export default function QuotationsPage() {
   const [selectedTools, setSelectedTools] = useState<Set<string>>(new Set());
   const [drafts, setDrafts] = useState<Quotation[]>([]);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
 
   // Load from localStorage on mount/user change
   useEffect(() => {
@@ -184,15 +178,20 @@ export default function QuotationsPage() {
       const allPricesZero = budgetItems.every(item => item.price === 0);
       
       const head = allPricesZero 
-        ? [['Produto', 'Quantidade']] 
-        : [['Produto', 'Quantidade', 'Preço Unit.', 'Total']];
+        ? [['Produto', 'Fornecedor', 'Quantidade']] 
+        : [['Produto', 'Fornecedor', 'Quantidade', 'Preço Unit.', 'Total']];
 
       const tableData = budgetItems.map(item => {
+        const tool = tools.find(t => t.id === item.toolId);
+        const supplier = suppliers.find(s => tool?.contacts?.includes(s.whatsapp));
+        const supplierName = supplier ? supplier.name : '-';
+
         if (allPricesZero) {
-          return [item.name, item.quantity.toString()];
+          return [item.name, supplierName, item.quantity.toString()];
         }
         return [
           item.name,
+          supplierName,
           item.quantity.toString(),
           `R$ ${item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
           `R$ ${(item.quantity * item.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
@@ -206,10 +205,14 @@ export default function QuotationsPage() {
         theme: 'striped',
         headStyles: { fillColor: [14, 165, 233] },
         styles: { fontSize: 9 },
-        columnStyles: allPricesZero ? { 1: { halign: 'center' } } : {
-          1: { halign: 'center' },
-          2: { halign: 'right' },
-          3: { halign: 'right' }
+        columnStyles: allPricesZero ? { 
+          1: { fontSize: 7, fontStyle: 'bold', textColor: [14, 165, 233] },
+          2: { halign: 'center' } 
+        } : {
+          1: { fontSize: 7, fontStyle: 'bold', textColor: [14, 165, 233] },
+          2: { halign: 'center' },
+          3: { halign: 'right' },
+          4: { halign: 'right' }
         }
       });
 
@@ -389,7 +392,7 @@ export default function QuotationsPage() {
                             type="number"
                             min="1"
                             className="h-9 px-2 text-center"
-                            value={item.quantity}
+                            value={item.quantity ?? 1}
                             onChange={(e) => updateItem(item.toolId, 'quantity', parseInt(e.target.value) || 0)}
                           />
                         </td>
@@ -400,7 +403,7 @@ export default function QuotationsPage() {
                               type="number"
                               step="0.01"
                               className="h-9 pl-8 pr-2 text-right"
-                              value={item.price}
+                              value={item.price ?? 0}
                               onChange={(e) => updateItem(item.toolId, 'price', parseFloat(e.target.value) || 0)}
                             />
                           </div>
@@ -657,6 +660,48 @@ export default function QuotationsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Floating Action Button (FAB) for WhatsApp Template Trigger */}
+      <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40">
+        <button
+          type="button"
+          onClick={() => setIsWhatsAppModalOpen(true)}
+          title="Disparar modelo de mensagem WhatsApp para fornecedores"
+          className="group relative flex items-center gap-3 bg-[#25D366] hover:bg-[#20ba5a] text-white px-5 py-3.5 rounded-full shadow-[0_8px_30px_rgba(37,211,102,0.45)] hover:shadow-[0_10px_35px_rgba(37,211,102,0.65)] hover:scale-105 active:scale-95 transition-all duration-300 font-semibold text-sm cursor-pointer border border-emerald-400/30"
+        >
+          <div className="relative flex items-center justify-center">
+            <WhatsAppIcon className="w-6 h-6 shrink-0 fill-current" />
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+            </span>
+          </div>
+          <span className="hidden sm:inline font-bold tracking-wide">
+            WhatsApp Fornecedores
+          </span>
+          {budgetItems.length > 0 && (
+            <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+              {budgetItems.length} {budgetItems.length === 1 ? 'item' : 'itens'}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* WhatsApp Template & Supplier Dispatch Modal */}
+      <WhatsAppTemplateModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        suppliers={suppliers}
+        tools={tools}
+        budgetItems={budgetItems}
+        initialSupplierId={selectedSupplierId || undefined}
+        companyName={profile?.companyName}
+        userId={user?.uid}
+        onSuccess={(msg) => {
+          setSuccessMsg(msg);
+          setTimeout(() => setSuccessMsg(null), 4000);
+        }}
+      />
     </div>
   );
 }

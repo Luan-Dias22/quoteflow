@@ -50,6 +50,7 @@ export interface Quotation {
   message: string;
   status: 'Rascunho' | 'Enviado' | 'Respondido' | 'Negociando';
   createdAt: string;
+  updatedAt?: string;
   pdfUrl?: string;
   pdfName?: string;
 }

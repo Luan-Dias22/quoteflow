@@ -32,7 +32,8 @@ export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
 );
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => {
+  ({ className, value, defaultValue, ...props }, ref) => {
+    const controlledValue = defaultValue !== undefined ? undefined : (value ?? '');
     return (
       <input
         ref={ref}
@@ -40,6 +41,8 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
           'flex h-10 w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm ring-offset-white dark:ring-offset-slate-950 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-400 dark:placeholder:text-slate-500 text-gray-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all',
           className
         )}
+        value={controlledValue}
+        defaultValue={defaultValue}
         {...props}
       />
     );
@@ -47,7 +50,8 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
 );
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  ({ className, ...props }, ref) => {
+  ({ className, value, defaultValue, ...props }, ref) => {
+    const controlledValue = defaultValue !== undefined ? undefined : (value ?? '');
     return (
       <textarea
         ref={ref}
@@ -55,6 +59,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
           'flex min-h-[80px] w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm ring-offset-white dark:ring-offset-slate-950 placeholder:text-gray-400 dark:placeholder:text-slate-500 text-gray-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0EA5E9] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all',
           className
         )}
+        value={controlledValue}
+        defaultValue={defaultValue}
         {...props}
       />
     );

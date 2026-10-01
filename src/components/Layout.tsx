@@ -15,10 +15,12 @@ import {
   Moon,
   Zap,
   Target,
-  FileText
+  FileText,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { cn } from '../lib/utils';
@@ -27,9 +29,11 @@ import { Button } from './UI';
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { profile } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { notifications, unreadCount, markAllAsRead, permission, requestPermission } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -152,7 +156,107 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </h2>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Notification Bell Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsNotificationsOpen(prev => !prev)}
+                className="relative p-2.5 rounded-xl bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all border border-gray-100 dark:border-slate-700"
+                title="Notificações Push"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-gray-100 dark:border-slate-800 z-50 animate-in fade-in zoom-in-95 duration-150 p-4 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800">
+                    <div className="flex items-center gap-1.5">
+                      <Bell size={16} className="text-[#0EA5E9]" />
+                      <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">Notificações</h4>
+                      {unreadCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600">
+                          {unreadCount} nova(s)
+                        </span>
+                      )}
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-[11px] font-medium text-[#0EA5E9] hover:underline"
+                      >
+                        Marcar lidas
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Push Status Banner */}
+                  {permission !== 'granted' && (
+                    <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/30 flex items-center justify-between gap-2 text-xs">
+                      <span className="text-blue-700 dark:text-blue-300 font-medium">
+                        Ative os alertas no navegador
+                      </span>
+                      <button
+                        onClick={requestPermission}
+                        className="px-2 py-1 rounded-lg bg-[#0EA5E9] text-white font-bold text-[11px] hover:bg-sky-600 transition-colors"
+                      >
+                        Ativar Push
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Notifications list */}
+                  <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    {notifications.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-gray-400">
+                        Nenhuma notificação recebida ainda.
+                      </div>
+                    ) : (
+                      notifications.slice(0, 10).map((n) => (
+                        <div
+                          key={n.id}
+                          className={cn(
+                            "p-2.5 rounded-xl border text-xs transition-colors",
+                            n.read 
+                              ? "border-gray-100 dark:border-slate-800/80 bg-transparent text-gray-500" 
+                              : "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20 text-gray-900 dark:text-white"
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold flex items-center gap-1 text-[11px]">
+                              {n.type === 'whatsapp_quote' ? '💬 WhatsApp' : '🚀 Lead'}
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                              {new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-[11px] line-clamp-2">{n.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-100 dark:border-slate-800 text-center">
+                    <button
+                      onClick={() => {
+                        setIsNotificationsOpen(false);
+                        navigate('/history');
+                      }}
+                      className="text-xs text-[#0EA5E9] hover:underline font-semibold"
+                    >
+                      Ver Histórico Completo de Cotações →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={toggleTheme}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-200 border border-gray-100 dark:border-slate-700 shadow-sm"

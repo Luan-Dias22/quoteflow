@@ -41,12 +41,17 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profile) {
       setFormData({
-        companyName: profile.companyName,
+        companyName: profile.companyName || '',
         cnpj: profile.cnpj || '',
-        email: profile.email
+        email: profile.email || user?.email || ''
       });
+    } else if (user) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || ''
+      }));
     }
-  }, [profile]);
+  }, [profile, user]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();

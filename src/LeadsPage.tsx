@@ -304,7 +304,7 @@ export default function LeadsPage() {
                       <div className="flex items-center justify-end gap-2">
                         <select 
                           className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                          value={lead.status}
+                          value={lead.status || 'Novo Pedido'}
                           onChange={(e) => handleUpdateStatus(lead.id!, e.target.value as Lead['status'])}
                         >
                           <option value="Novo Pedido">Marcar Novo Pedido</option>

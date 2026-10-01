@@ -167,13 +167,14 @@ export default function HistoryPage() {
 
   const handleUpdateStatus = async (id: string, status: Quotation['status'], quotes?: Quotation[]) => {
     try {
+      const updatedAt = new Date().toISOString();
       if (quotes && quotes.length > 1) {
         // Update all quotes in the group
-        await Promise.all(quotes.map(q => updateDoc(doc(db, 'quotations', q.id!), { status })));
-        setQuotations(prev => prev.map(q => quotes.some(gq => gq.id === q.id) ? { ...q, status } : q));
+        await Promise.all(quotes.map(q => updateDoc(doc(db, 'quotations', q.id!), { status, updatedAt })));
+        setQuotations(prev => prev.map(q => quotes.some(gq => gq.id === q.id) ? { ...q, status, updatedAt } : q));
       } else {
-        await updateDoc(doc(db, 'quotations', id), { status });
-        setQuotations(prev => prev.map(q => q.id === id ? { ...q, status } : q));
+        await updateDoc(doc(db, 'quotations', id), { status, updatedAt });
+        setQuotations(prev => prev.map(q => q.id === id ? { ...q, status, updatedAt } : q));
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `quotations/${id}`);
@@ -641,7 +642,7 @@ export default function HistoryPage() {
                                 )}
                                 <select 
                                   className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                                  value={g.status}
+                                  value={g.status || 'Rascunho'}
                                   onChange={(e) => handleUpdateStatus(g.id!, e.target.value as Quotation['status'], g.quotes)}
                                 >
                                   <option value="Rascunho">Marcar Agendado</option>
@@ -741,7 +742,7 @@ export default function HistoryPage() {
                           )}
                           <select 
                             className="text-xs bg-transparent border-none focus:ring-0 text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                            value={g.status}
+                            value={g.status || 'Rascunho'}
                             onChange={(e) => handleUpdateStatus(g.id!, e.target.value as Quotation['status'], g.quotes)}
                           >
                             <option value="Rascunho">Marcar Agendado</option>
